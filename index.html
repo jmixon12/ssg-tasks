@@ -611,9 +611,18 @@
     // ── SIGN IN ────────────────────────────────
     function getPin() { try { return localStorage.getItem('ssl_pin')||''; } catch(e) { return ''; } }
     function getUserName() { try { return localStorage.getItem('ssl_user')||''; } catch(e) { return ''; } }
+    // Only hides admin buttons; the server enforces admin-only actions itself
+    function isAdmin() { try { return localStorage.getItem('ssl_admin') === '1'; } catch(e) { return false; } }
+
+    function saveMember(member) {
+      try {
+        localStorage.setItem('ssl_user', member.name);
+        localStorage.setItem('ssl_admin', member.admin ? '1' : '0');
+      } catch(e) {}
+    }
 
     function showSignIn(msg) {
-      try { localStorage.removeItem('ssl_pin'); localStorage.removeItem('ssl_user'); } catch(e) {}
+      try { localStorage.removeItem('ssl_pin'); localStorage.removeItem('ssl_user'); localStorage.removeItem('ssl_admin'); } catch(e) {}
       document.getElementById('pinInput').value = '';
       document.getElementById('pinMsg').innerHTML = msg ? '<div class="error-msg">'+escHtml(msg)+'</div>' : '';
       document.getElementById('signin').classList.add('active');
@@ -626,8 +635,8 @@
       document.getElementById('pinMsg').innerHTML = '<div class="loading">Checking... / Verificando...</div>';
       callApi('signIn', [], function(result) {
         setBusy('pinBtn', false);
-        var name = JSON.parse(result).name;
-        try { localStorage.setItem('ssl_pin', pin); localStorage.setItem('ssl_user', name); } catch(e) {}
+        try { localStorage.setItem('ssl_pin', pin); } catch(e) {}
+        saveMember(JSON.parse(result));
         document.getElementById('signin').classList.remove('active');
         startApp();
       }, function(err) {
@@ -642,6 +651,11 @@
     function startApp() {
       document.getElementById('hamUserName').textContent = getUserName();
       loadTasks();
+      // Pick up any change to this person's name or admin status since they signed in
+      callApi('whoAmI', [], function(result) {
+        saveMember(JSON.parse(result));
+        document.getElementById('hamUserName').textContent = getUserName();
+      }, null);
     }
 
     var allTasks = [];
@@ -1185,10 +1199,12 @@
       } else {
         body += '<button class="btn-full btn-dark" id="completeToggleBtn" onclick="completeCurrentTask()">&#x2713; Mark Complete / Marcar Completa</button>';
       }
-      body += '<div class="btn-pair">';
-      body += '<button class="btn-full btn-info" onclick="openEditModal()">&#x270F; Edit Task / Editar Tarea</button>';
-      body += '<button class="btn-full btn-danger" onclick="promptDeleteTask()">&#x1F5D1; Delete Task / Eliminar Tarea</button>';
-      body += '</div>';
+      if (isAdmin()) {
+        body += '<div class="btn-pair">';
+        body += '<button class="btn-full btn-info" onclick="openEditModal()">&#x270F; Edit Task / Editar Tarea</button>';
+        body += '<button class="btn-full btn-danger" onclick="promptDeleteTask()">&#x1F5D1; Delete Task / Eliminar Tarea</button>';
+        body += '</div>';
+      }
       body += '</div>';
 
       document.getElementById('taskDetailBody').innerHTML = body;
