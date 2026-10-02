@@ -333,19 +333,21 @@
         <button class="size-btn" id="sz-huge" onclick="setFontSize('huge')">H</button>
       </div>
     </div>
-    <div class="ham-divider"></div>
-
-    <div class="ham-section" style="padding-top:12px;">
-      <div class="ham-section-title">&#x2699; Manage</div>
-      <button class="ham-action-btn" onclick="closeHamburger();openModal('locationsModal')">&#x1F4CD; Locations / Ubicaciones</button>
-      <button class="ham-action-btn" onclick="closeHamburger();openModal('teamModal')">&#x1F465; Team Members / Equipo</button>
-    </div>
-    <div class="ham-divider"></div>
-
-    <div class="ham-section" style="padding-top:12px;">
-      <div class="ham-section-title">&#x1F512; Admin</div>
-      <button class="ham-action-btn" onclick="closeHamburger();openModal('changePwModal')">&#x1F511; Change Password</button>
-      <button class="ham-action-btn" onclick="closeHamburger();openAuditModal()">&#x1F50D; Audit Orphans</button>
+    <!-- Shown to admins only (see applyAdminUI); the server also refuses these to non-admins -->
+    <div id="hamAdminOnly" style="display:none;">
+      <div class="ham-divider"></div>
+      <div class="ham-section" style="padding-top:12px;">
+        <div class="ham-section-title">&#x2699; Manage</div>
+        <button class="ham-action-btn" onclick="closeHamburger();openModal('locationsModal')">&#x1F4CD; Locations / Ubicaciones</button>
+        <button class="ham-action-btn" onclick="closeHamburger();openModal('teamModal')">&#x1F465; Team Members / Equipo</button>
+      </div>
+      <div class="ham-divider"></div>
+      <div class="ham-section" style="padding-top:12px;">
+        <div class="ham-section-title">&#x1F512; Admin</div>
+        <button class="ham-action-btn" onclick="closeHamburger();openLoginLog()">&#x1F4CB; Login Log / Registro de acceso</button>
+        <button class="ham-action-btn" onclick="closeHamburger();openModal('changePwModal')">&#x1F511; Change Password</button>
+        <button class="ham-action-btn" onclick="closeHamburger();openAuditModal()">&#x1F50D; Audit Orphans</button>
+      </div>
     </div>
   </div>
 
@@ -500,6 +502,29 @@
           <button onclick="addNewTeamMember()">Add</button>
         </div>
         <div class="add-comment-section">
+          <h4>&#x1F310; Language / Idioma</h4>
+          <div class="form-group"><label>Team member / Miembro</label><select id="langMember" onchange="fillLangForm()"></select></div>
+          <div class="form-group">
+            <label>Language / Idioma</label>
+            <select id="langSetting">
+              <option value="">Not set (their choice)</option>
+              <option value="en">English</option>
+              <option value="blend">Blend (both)</option>
+              <option value="es">Espa&ntilde;ol</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Primary / Preferido (for Blend)</label>
+            <select id="primarySetting">
+              <option value="">Not set (their choice)</option>
+              <option value="en">English first</option>
+              <option value="es">Espa&ntilde;ol primero</option>
+            </select>
+          </div>
+          <div id="langMsg"></div>
+          <div class="form-row"><button class="btn-primary" id="langSaveBtn" onclick="submitMemberLanguage()">Save language / Guardar idioma</button></div>
+        </div>
+        <div class="add-comment-section">
           <h4>&#x1F511; PINs &amp; removal (admin password)</h4>
           <div class="form-group"><label>Team member / Miembro</label><select id="adminMember"></select></div>
           <div class="form-group"><label>New PIN, 4&ndash;8 digits / Nuevo PIN</label><input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off"></div>
@@ -560,6 +585,20 @@
     </div>
   </div>
 
+  <!-- ── LOGIN LOG MODAL (admins) ───────────────── -->
+  <div class="modal" id="loginLogModal">
+    <div class="modal-content modal-content-wide">
+      <div class="modal-hdr">
+        <div class="modal-hdr-title">&#x1F4CB; Login Log / Registro de acceso</div>
+        <button class="close-btn" onclick="closeModal('loginLogModal')">&#xD7;</button>
+      </div>
+      <div class="modal-body">
+        <div class="filter-bar"><select id="loginLogFilter" onchange="renderLoginLog()"></select></div>
+        <div id="loginLogBody"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── LIGHTBOX ───────────────────────────────── -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
     <button class="lightbox-close" onclick="closeLightbox(event)">&#xD7;</button>
@@ -575,7 +614,19 @@
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
       'addLocation','removeLocation','addTeamMember','removeTeamMember','setMemberPin',
-      'changeDeletePassword','auditOrphansJSON','deleteOrphansJSON'];
+      'changeDeletePassword','auditOrphansJSON','deleteOrphansJSON',
+      'getTeamAdminJSON','setMemberLanguage','getLoginLogJSON'];
+
+    // Short device label for the login log, e.g. "iPhone - Safari (Home Screen)"
+    function deviceLabel() {
+      var ua = navigator.userAgent || '';
+      var dev = /iPad/.test(ua) ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android'
+        : /Macintosh/.test(ua) ? (navigator.maxTouchPoints > 1 ? 'iPad' : 'Mac') : /Windows/.test(ua) ? 'Windows' : 'Other';
+      var br = /EdgiOS|Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome'
+        : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+      var home = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      return dev + ' - ' + br + (home ? ' (Home Screen)' : '');
+    }
 
     // POSTs {fn, args, pin}. text/plain keeps it a "simple" cross-site request (no preflight),
     // which Apps Script requires.
@@ -584,7 +635,7 @@
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ fn: fn, args: args, pin: pinOverride || getPin() })
+        body: JSON.stringify({ fn: fn, args: args, pin: pinOverride || getPin(), device: deviceLabel() })
       }).then(function(resp) { return resp.text(); }).then(function(text) {
         var res;
         try { res = JSON.parse(text); } catch(e) { fail('Unexpected server response'); return; }
@@ -619,10 +670,28 @@
         localStorage.setItem('ssl_user', member.name);
         localStorage.setItem('ssl_admin', member.admin ? '1' : '0');
       } catch(e) {}
+      applyMemberLanguage(member);
+      applyAdminUI();
+    }
+
+    // Applies the language settings an admin chose for this person, but only when they're new
+    // or have changed since last applied. In between, the person can still adjust their own.
+    function applyMemberLanguage(member) {
+      var key = (member.lang || '') + '|' + (member.primary || ''), last = null;
+      try { last = localStorage.getItem('ssl_lang_applied'); } catch(e) {}
+      if (key === last) return;
+      if (member.lang) setLang(member.lang);
+      if (member.primary) setPrefLang(member.primary);
+      try { localStorage.setItem('ssl_lang_applied', key); } catch(e) {}
+    }
+
+    function applyAdminUI() {
+      document.getElementById('hamAdminOnly').style.display = isAdmin() ? '' : 'none';
     }
 
     function showSignIn(msg) {
-      try { localStorage.removeItem('ssl_pin'); localStorage.removeItem('ssl_user'); localStorage.removeItem('ssl_admin'); } catch(e) {}
+      try { ['ssl_pin','ssl_user','ssl_admin','ssl_lang_applied'].forEach(function(k){ localStorage.removeItem(k); }); } catch(e) {}
+      applyAdminUI();
       document.getElementById('pinInput').value = '';
       document.getElementById('pinMsg').innerHTML = msg ? '<div class="error-msg">'+escHtml(msg)+'</div>' : '';
       document.getElementById('signin').classList.add('active');
@@ -646,10 +715,15 @@
       }, pin);
     }
 
-    function signOut() { showSignIn(''); }
+    // Logs the sign-out on the server, then clears this device right away
+    function signOut() {
+      callApi('signOut', [], null, null);
+      showSignIn('');
+    }
 
     function startApp() {
       document.getElementById('hamUserName').textContent = getUserName();
+      applyAdminUI();
       loadTasks();
       // Pick up any change to this person's name or admin status since they signed in
       callApi('whoAmI', [], function(result) {
@@ -819,7 +893,7 @@
 
     document.addEventListener('keydown', function(e) {
       if (e.key==='Escape') {
-        ['createTaskModal','taskDetailModal','editTaskModal','deletePwModal','locationsModal','teamModal','changePwModal','auditModal','statsModal'].forEach(function(id) {
+        ['createTaskModal','taskDetailModal','editTaskModal','deletePwModal','locationsModal','teamModal','changePwModal','auditModal','statsModal','loginLogModal'].forEach(function(id) {
           document.getElementById(id).classList.remove('active');
         });
         closeHamburger();
@@ -1434,14 +1508,82 @@
     }
 
     // ── MANAGE TEAM ────────────────────────────
+    var teamMembers = [];
+    var LANG_LABELS = { en: 'English', blend: 'Blend', es: 'Español' };
+    var PRIMARY_LABELS = { en: 'English first', es: 'Español primero' };
+
+    // Admin view of the team: each person's admin status, PIN status, and language settings
     function loadTeamList() {
-      google.script.run.withSuccessHandler(function(j){
-        var data=JSON.parse(j).sort(function(a,b){return a.localeCompare(b);});
-        document.getElementById('teamList').innerHTML = data.map(function(m){ return '<li>'+escHtml(m)+'</li>'; }).join('');
-        var sel = document.getElementById('adminMember');
-        sel.innerHTML = '';
-        data.forEach(function(m){var o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
-      }).getTeamJSON();
+      server(function(r){
+        if (!r.success) { showMsg('teamList', r.error||'Unknown error'); return; }
+        teamMembers = r.members.sort(function(a,b){ return a.name.localeCompare(b.name); });
+        document.getElementById('teamList').innerHTML = teamMembers.map(function(m){
+          var tags = [];
+          if (m.admin) tags.push('Admin');
+          tags.push(m.hasPin ? 'PIN ✓' : 'No PIN');
+          if (m.lang) tags.push(LANG_LABELS[m.lang] + (m.lang === 'blend' && m.primary ? ', ' + PRIMARY_LABELS[m.primary] : ''));
+          return '<li><span>'+escHtml(m.name)+'</span><span style="color:#888;font-size:calc(var(--fs-base) - 2px);">'+escHtml(tags.join(' · '))+'</span></li>';
+        }).join('');
+        ['adminMember','langMember'].forEach(function(id){
+          var sel = document.getElementById(id), keep = sel.value;
+          sel.innerHTML = '';
+          teamMembers.forEach(function(m){var o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o);});
+          if (keep) sel.value = keep;
+        });
+        fillLangForm();
+      }, function(m){ showMsg('teamList', m); }).getTeamAdminJSON();
+    }
+
+    function fillLangForm() {
+      var name = document.getElementById('langMember').value;
+      var m = teamMembers.filter(function(x){ return x.name === name; })[0] || {};
+      document.getElementById('langSetting').value = m.lang || '';
+      document.getElementById('primarySetting').value = m.primary || '';
+      document.getElementById('langMsg').innerHTML = '';
+    }
+
+    function submitMemberLanguage() {
+      var name = document.getElementById('langMember').value;
+      if (!name) return;
+      setBusy('langSaveBtn', true);
+      server(function(r){
+        setBusy('langSaveBtn', false);
+        if (!r.success) { showMsg('langMsg', r.error||'Unknown error'); return; }
+        document.getElementById('langMsg').innerHTML = '<div style="color:#27ae60;padding:10px;">Saved for '+escHtml(name)+'. Applies the next time they open the app. / Guardado.</div>';
+        loadTeamList();
+      }, function(m){ setBusy('langSaveBtn', false); showMsg('langMsg', m); })
+        .setMemberLanguage(name, document.getElementById('langSetting').value, document.getElementById('primarySetting').value);
+    }
+
+    // ── LOGIN LOG (admins) ─────────────────────
+    var loginLog = [];
+    function openLoginLog() {
+      openModal('loginLogModal');
+      document.getElementById('loginLogBody').innerHTML = '<div class="loading">Loading...</div>';
+      server(function(r){
+        if (!r.success) { showMsg('loginLogBody', r.error||'Unknown error'); return; }
+        loginLog = r.entries;
+        var names = [];
+        loginLog.forEach(function(e){ if (names.indexOf(e.name) === -1) names.push(e.name); });
+        names.sort();
+        var sel = document.getElementById('loginLogFilter');
+        sel.innerHTML = '<option value="">Everyone / Todos</option>' + names.map(function(n){ return '<option value="'+escHtml(n)+'">'+escHtml(n)+'</option>'; }).join('');
+        renderLoginLog();
+      }, function(m){ showMsg('loginLogBody', m); }).getLoginLogJSON(300);
+    }
+
+    function renderLoginLog() {
+      var who = document.getElementById('loginLogFilter').value;
+      var rows = loginLog.filter(function(e){ return !who || e.name === who; });
+      if (!rows.length) { document.getElementById('loginLogBody').innerHTML = '<p style="color:#999;padding:12px;">No entries yet / Sin registros</p>'; return; }
+      document.getElementById('loginLogBody').innerHTML =
+        '<table class="stats-table"><thead><tr><th>When</th><th>Who</th><th>Event</th><th>Device</th></tr></thead><tbody>' +
+        rows.map(function(e){
+          var bad = /Wrong|Locked/.test(e.event);
+          return '<tr><td style="white-space:nowrap;">'+escHtml(e.date)+'<br><small style="color:#999;">'+escHtml(String(e.time).substring(0,5))+'</small></td>' +
+            '<td>'+escHtml(e.name)+'</td><td'+(bad?' class="stat-late"':'')+'>'+escHtml(e.event)+'</td><td style="color:#666;">'+escHtml(e.device)+'</td></tr>';
+        }).join('') + '</tbody></table>' +
+        '<p style="margin-top:10px;color:#999;font-size:calc(var(--fs-base) - 1px);">Latest 300 entries. The full log is in the "Login Log" tab of the spreadsheet.</p>';
     }
 
     function submitSetPin() {
