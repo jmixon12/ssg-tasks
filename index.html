@@ -59,7 +59,7 @@
     .fb { height:2.7rem; min-width:2.7rem; border-radius:1.35rem; border:0; background:var(--surface); color:var(--text); display:flex; align-items:center; justify-content:center; gap:.4rem; padding:0 1rem; font-size:.98rem; white-space:nowrap; }
     .fb svg { width:1.3rem; height:1.3rem; }
     .fb.icon { padding:0; }
-    .fb.on { box-shadow:inset 0 0 0 2px var(--blue); }
+    .fb.on { box-shadow:inset 0 0 0 3px var(--blue); color:var(--blue); background:color-mix(in srgb, var(--blue) 18%, var(--surface)); }
     .fb.plus { background:var(--accent); color:#fff; padding:0; }
 
     /* ── TASK LIST ─────────────────────────────── */
@@ -73,9 +73,12 @@
     .row-body { flex:1; min-width:0; display:flex; align-items:center; gap:.6rem; padding:.72rem 0; }
     .row + .row .row-body { border-top:1px solid var(--border); }
     .row-main { flex:1; min-width:0; }
-    .row-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:1.02rem; }
+    .row-title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; font-size:1.02rem; line-height:1.3; }
     .row.done .row-title { color:var(--muted); }
-    .row-sub { color:var(--muted); font-size:.86rem; margin-top:.12rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row-sub { display:flex; align-items:center; gap:.5rem; color:var(--muted); font-size:.86rem; margin-top:.15rem; min-width:0; }
+    .row-sub .meta { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row-map { flex:0 0 auto; display:inline-flex; align-items:center; gap:.25rem; color:var(--blue); font-weight:500; text-decoration:none; padding:.3rem .45rem; margin:-.3rem -.45rem; border-radius:.4rem; }
+    .row-map svg { width:.95rem; height:.95rem; }
     .check { flex:0 0 auto; width:1.45rem; height:1.45rem; border-radius:50%; border:1.5px solid var(--muted); color:var(--muted); display:flex; align-items:center; justify-content:center; background:none; padding:0; }
     .check svg { width:.85rem; height:.85rem; }
     .check.done { background:var(--green); border-color:var(--green); color:#fff; }
@@ -165,6 +168,9 @@
     .textbtn.strong { font-weight:700; background:var(--accent); color:#fff; border-radius:1.4rem; padding:.6rem 1.1rem; }
     .pillbtn { border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:1.4rem; padding:.5rem 1rem; display:flex; align-items:center; gap:.45rem; font-size:.98rem; }
     .pillbtn svg { width:1.1rem; height:1.1rem; }
+    .topbar .pillbtn { min-height:2.75rem; white-space:nowrap; }
+    .pillbtn.back { padding-left:.7rem; gap:.25rem; }
+    .pillbtn.back svg { width:1.3rem; height:1.3rem; }
     .pillbtn.done { background:var(--green); border-color:var(--green); color:#fff; }
     .pad { padding:1rem 1.1rem; }
 
@@ -190,6 +196,8 @@
     .d-sec h2 { font-size:1.22rem; margin:0 0 .7rem; font-weight:600; display:flex; align-items:center; gap:.5rem; }
     .d-sec h2 .muted { font-weight:400; font-size:1rem; margin-left:auto; }
     .d-row { display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+    .checkline { display:flex; align-items:center; gap:.6rem; padding:.7rem 0 1rem; font-size:1rem; cursor:pointer; }
+    .checkline input { width:1.3rem; height:1.3rem; margin:0; accent-color:var(--green); }
     .loc-pill { display:inline-flex; align-items:center; gap:.45rem; background:var(--surface2); border-radius:.45rem; padding:.38rem .75rem; font-weight:500; }
     .maplink { display:inline-flex; align-items:center; gap:.3rem; color:var(--blue); text-decoration:none; font-weight:500; padding:.38rem .2rem; vertical-align:middle; }
     .maplink svg { width:1.05rem; height:1.05rem; }
@@ -457,6 +465,7 @@
       filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>',
       plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
       updown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9 4-4 4 4M8 15l4 4 4-4"/></svg>',
+      copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
       pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>',
       x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
@@ -482,12 +491,12 @@
       secOverdue: ['Overdue', 'Vencidas'], secToday: ['Today', 'Hoy'], secWeek: ['This week', 'Esta semana'], secLater: ['Later', 'Más adelante'],
       secNoDate: ['No due date', 'Sin fecha'], secCompleted: ['Completed', 'Completadas'],
       today: ['Today', 'Hoy'], tomorrow: ['Tomorrow', 'Mañana'], yesterday: ['Yesterday', 'Ayer'],
-      byDate: ['By due date', 'Por fecha'], byLocation: ['By location', 'Por ubicación'], noTasks: ['No tasks here', 'No hay tareas aquí'],
+      byDate: ['By due date', 'Por fecha'], byLocation: ['By location', 'Por ubicación'], noTasks: ['No tasks here', 'No hay tareas aquí'], noMatch: ['No tasks match your filters', 'Ninguna tarea coincide con los filtros'], clearFilters: ['Clear filters', 'Borrar filtros'],
       filters: ['Filters', 'Filtros'], assignedTo: ['Assigned to', 'Asignado a'], location: ['Location', 'Ubicación'], priority: ['Priority', 'Prioridad'],
       everyone: ['Everyone', 'Todos'], me: ['Me', 'Yo'], team: ['Team', 'Equipo'], any: ['Any', 'Cualquiera'], clear: ['Clear', 'Borrar'], done: ['Done', 'Listo'],
       Urgent: ['Urgent', 'Urgente'], High: ['High', 'Alta'], Medium: ['Medium', 'Media'], Low: ['Low', 'Baja'],
       stActive: ['Active', 'Activa'], stOverdue: ['Overdue', 'Vencida'], stComplete: ['Complete', 'Completa'], status: ['Status', 'Estado'],
-      markComplete: ['Mark complete', 'Marcar completa'], completedPill: ['Completed', 'Completada'],
+      markComplete: ['Mark complete', 'Marcar completa'], back: ['Back', 'Atrás'], completedPill: ['Completed', 'Completada'],
       copyLink: ['Copy link', 'Copiar enlace'], linkCopied: ['Link copied', 'Enlace copiado'], editTask: ['Edit task', 'Editar tarea'], deleteTask: ['Delete task', 'Eliminar tarea'],
       dueDate: ['Due date', 'Vence'], noDue: ['No due date', 'Sin fecha'], map: ['Map', 'Mapa'], notSet: ['Not set', 'Sin definir'],
       description: ['Description', 'Descripción'], subtasks: ['Subtasks', 'Subtareas'], addSubtask: ['Add subtask', 'Agregar subtarea'], add: ['Add', 'Agregar'],
@@ -505,7 +514,8 @@
       newTask: ['New task', 'Nueva tarea'], title: ['Title', 'Título'], time: ['Time', 'Hora'], timeHint: ['Defaults to 3:00 PM', 'Por defecto 3:00 PM'],
       select: ['Select…', 'Seleccionar…'], adminPw: ['Admin password', 'Contraseña de administrador'], create: ['Create', 'Crear'], save: ['Save', 'Guardar'], cancel: ['Cancel', 'Cancelar'],
       required: ['Title and Assigned to are required', 'Título y Asignado a son obligatorios'], pwRequired: ['Admin password required', 'Se requiere la contraseña'],
-      taskCreated: ['Task created', 'Tarea creada'], taskSaved: ['Task saved', 'Tarea guardada'], taskDeleted: ['Task deleted', 'Tarea eliminada'],
+      taskCreated: ['Task created', 'Tarea creada'], taskDuplicated: ['Task duplicated', 'Tarea duplicada'],
+      duplicateTask: ['Duplicate task', 'Duplicar tarea'], copySubtasks: ['Copy subtasks ({n})', 'Copiar subtareas ({n})'], taskSaved: ['Task saved', 'Tarea guardada'], taskDeleted: ['Task deleted', 'Tarea eliminada'],
       deleteQ: ['Delete this task?', '¿Eliminar esta tarea?'], deleteBody: ['The task, its comments, and its subtasks will be removed. Photos are kept.', 'Se eliminarán la tarea, sus comentarios y subtareas. Las fotos se conservan.'],
       del: ['Delete', 'Eliminar'], max5: ['Maximum 5 photos at a time', 'Máximo 5 fotos a la vez'],
       yourDueToday: ['Your tasks due today', 'Sus tareas para hoy'], yourOverdue: ['Your overdue tasks', 'Sus tareas vencidas'],
@@ -817,13 +827,17 @@
       if (task.Location) sub.push(escHtml(task.Location));
       if (task['Subtasks Total']) sub.push('☑ ' + (task['Subtasks Done'] || 0) + '/' + task['Subtasks Total']);
       if (task.Assignee && task.Assignee !== 'Team') sub.push(escHtml(task.Assignee));
+      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']);
       return '<div class="row' + (done ? ' done' : '') + '" data-act="openTask" data-arg="' + escHtml(task['Task ID']) + '">' +
         '<span class="check' + (done ? ' done' : '') + '">' + ICON.check + '</span>' +
         '<div class="row-body"><div class="row-main"><div class="row-title">' + escHtml(titleOf(task).primary) + '</div>' +
-        (sub.length ? '<div class="row-sub">' + sub.join(' · ') + '</div>' : '') + '</div>' + pill + '</div></div>';
+        (sub.length || mapUrl ? '<div class="row-sub">' + (sub.length ? '<span class="meta">' + sub.join(' · ') + '</span>' : '') +
+          (mapUrl ? '<a class="row-map" href="' + escHtml(mapUrl) + '" target="_blank" rel="noopener">' + ICON.map + t('map') + '</a>' : '') + '</div>' : '') +
+        '</div>' + pill + '</div></div>';
     }
     function isCollapsed(key) { return S.collapsed[key] !== undefined ? S.collapsed[key] : key === 'completed'; }
     function sectionHtml(key, label, tasks, red) {
+      if (!tasks.length) return '';  // only show sections that have tasks in them right now
       var collapsed = isCollapsed(key);
       return '<div class="sec' + (collapsed ? ' collapsed' : '') + (red && tasks.length ? ' red' : '') + '" id="sec-' + escHtml(key) + '" data-act="toggleSec" data-arg="' + escHtml(key) + '">' +
         '<span class="caret"></span><span class="stitle">' + escHtml(label) + '</span><span class="count">' + tasks.length + '</span></div>' +
@@ -872,13 +886,15 @@
         });
         names.sort(function(a, b) { return !a ? 1 : !b ? -1 : a.localeCompare(b); });
         names.forEach(function(k) { html += sectionHtml('loc:' + k, k || t('noLocation'), groups[k].sort(byDue)); });
-        if (!names.length) html += '<div class="empty">' + t('noTasks') + '</div>';
       } else {
         var g = dateGroups(tasks);
         html += sectionHtml('overdue', t('secOverdue'), g.overdue, true) + sectionHtml('today', t('secToday'), g.today) +
           sectionHtml('week', t('secWeek'), g.week) + sectionHtml('later', t('secLater'), g.later) + sectionHtml('nodate', t('secNoDate'), g.nodate);
       }
       html += sectionHtml('completed', t('secCompleted'), tasks.filter(isDone).sort(byCompletedDesc).slice(0, 60));
+      if (html === head) html += filterCount()
+        ? '<div class="empty">' + t('noMatch') + '<div style="margin-top:.8rem"><button class="linkbtn" data-act="resetFilters">' + t('clearFilters') + '</button></div></div>'
+        : '<div class="empty">' + t('noTasks') + '</div>';
       el.innerHTML = html;
     }
     function toggleSection(key) {
@@ -887,9 +903,10 @@
       var sec = $('sec-' + key);
       if (sec) { sec.classList.toggle('collapsed', collapsed); sec.nextElementSibling.classList.toggle('hidden', collapsed); }
     }
+    function resetFilters() { S.filters = { assignee: '', location: '', priority: '' }; lsSet('ssl_filters', JSON.stringify(S.filters)); }
     function goToSection(key) {
       S.view = 'date'; lsSet('ssl_view', 'date');
-      S.filters = { assignee: '', location: '', priority: '' }; lsSet('ssl_filters', JSON.stringify(S.filters));
+      resetFilters();
       S.collapsed[key] = false; lsSet('ssl_collapsed', JSON.stringify(S.collapsed));
       switchTab('tasks');
       setTimeout(function() { var el = $('sec-' + key); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.pageYOffset - 10); }, 30);
@@ -1133,14 +1150,14 @@
     // ═══════════════════════════════════════════
     // TASK DETAIL
     // ═══════════════════════════════════════════
-    function openTask(id) {
+    function openTask(id, inPlace) {
       if (!taskById(id)) return;
       var rec = lsJSON('ssl_recents', []).filter(function(x) { return x !== id; });
       rec.unshift(id); lsSet('ssl_recents', JSON.stringify(rec.slice(0, 12)));
       S.taskId = id; S.subtasks = []; S.photos = []; S.comments = []; S.detailLoaded = false; S.posting = false;
       $('taskSheetInner').innerHTML = '';  // so an unsent draft from the previous task doesn't carry over
       renderTaskSheet();
-      openSheet('taskSheet');
+      if (!inPlace) openSheet('taskSheet');  // inPlace: show a different task in the sheet that's already open
       loadTaskDetails(id);
     }
     function loadTaskDetails(id) {
@@ -1178,10 +1195,10 @@
       // Keep anything typed or picked in the comment / subtask boxes across re-renders
       var keepComment = $('commentText') ? $('commentText').value : '', keepSub = $('newSubtask') ? $('newSubtask').value : '';
       var keepFiles = $('commentPhoto'), keepMsg = $('commentMsg') ? $('commentMsg').innerHTML : '';
-      var html = '<div class="topbar"><button class="iconbtn" data-act="closeTop" aria-label="Back">' + ICON.back + '</button><span class="spacer"></span>' +
+      // ‹ Back on the left; Mark complete and ••• (copy link, plus admin actions) on the right
+      var html = '<div class="topbar"><button class="pillbtn back" data-act="closeTop">' + ICON.back + t('back') + '</button><span class="spacer"></span>' +
         '<button class="pillbtn' + (done ? ' done' : '') + '" id="completeBtn" data-act="' + (done ? 'reopenTask' : 'completeTask') + '">' + ICON.check + (done ? t('completedPill') : t('markComplete')) + '</button>' +
-        '<span class="spacer"></span><button class="iconbtn" data-act="copyLink" aria-label="' + t('copyLink') + '">' + ICON.link + '</button>' +
-        (admin ? '<button class="iconbtn" data-act="openMenu" aria-label="More">' + ICON.more + '</button>' : '<span style="width:2.5rem"></span>') + '</div>';
+        '<button class="iconbtn" data-act="openMenu" aria-label="More">' + ICON.more + '</button></div>';
       html += '<h1 class="d-title">' + escHtml(tt.primary) + '</h1>' + (tt.secondary ? '<div class="d-sub">' + escHtml(tt.secondary) + '</div>' : '');
       // Assigned to / Due date
       var due = task['Due Date'] ? (relDate(task['Due Date']) + (task['Due Time'] ? ' · ' + fmtTime(task['Due Time']) : '')) : t('noDue');
@@ -1285,9 +1302,12 @@
       }, function(m) { setBusy('completeBtn', false); showToast(m); }).reopenTask(id);
     }
 
-    // ── ••• menu (admins: edit / delete) + copy link ──
+    // ── ••• menu: copy link for everyone; edit / duplicate / delete for admins ──
     function openMenu() {
-      $('menu').innerHTML = '<button data-act="menuEdit">' + ICON.pencil + t('editTask') + '</button><button class="danger" data-act="menuDelete">' + ICON.trash + t('deleteTask') + '</button>';
+      $('menu').innerHTML = '<button data-act="menuCopyLink">' + ICON.link + t('copyLink') + '</button>' +
+        (isAdmin() ? '<button data-act="menuEdit">' + ICON.pencil + t('editTask') + '</button>' +
+          '<button data-act="menuDuplicate">' + ICON.copy + t('duplicateTask') + '</button>' +
+          '<button class="danger" data-act="menuDelete">' + ICON.trash + t('deleteTask') + '</button>' : '');
       $('menu').classList.add('open'); $('menuScrim').classList.add('on');
     }
     function closeMenu() { $('menu').classList.remove('open'); $('menuScrim').classList.remove('on'); }
@@ -1382,7 +1402,9 @@
     // CREATE / EDIT FORM
     // ═══════════════════════════════════════════
     function openForm(mode) {
-      var task = mode === 'edit' ? taskById(S.taskId) : null;
+      // 'duplicate' starts a new task filled in from the open one; it's saved like any new task
+      var task = mode === 'edit' || mode === 'duplicate' ? taskById(S.taskId) : null, editing = mode === 'edit';
+      var subs = mode === 'duplicate' ? S.subtasks.length : 0;
       var v = function(k, d) { return task ? (task[k] || d || '') : (d || ''); };
       var people = opt('', t('select'), v('Assignee')) + opt('Team', t('team'), v('Assignee')) + S.team.map(function(n) { return opt(n, n, v('Assignee')); }).join('');
       if (task && task.Assignee && task.Assignee !== 'Team' && S.team.indexOf(task.Assignee) === -1) people += opt(task.Assignee, task.Assignee, task.Assignee);
@@ -1391,8 +1413,8 @@
       var pri = ['Urgent','High','Medium','Low'].map(function(p) { return opt(p, t(p), v('Priority', 'Medium')); }).join('');
       var rec = [['None', t('never')], ['Daily', t('Daily')], ['Weekly', t('Weekly')], ['Monthly', t('Monthly')], ['Yearly', t('Yearly')]].map(function(r) { return opt(r[0], r[1], v('Recurrence', 'None')); }).join('');
       $('formSheetInner').innerHTML =
-        '<div class="topbar"><button class="textbtn" data-act="closeTop">' + t('cancel') + '</button><div class="ttl">' + (task ? t('editTask') : t('newTask')) + '</div>' +
-        '<button class="textbtn strong" id="formSave" data-act="saveForm" data-arg="' + mode + '">' + (task ? t('save') : t('create')) + '</button></div>' +
+        '<div class="topbar"><button class="textbtn" data-act="closeTop">' + t('cancel') + '</button><div class="ttl">' + (editing ? t('editTask') : task ? t('duplicateTask') : t('newTask')) + '</div>' +
+        '<button class="textbtn strong" id="formSave" data-act="saveForm" data-arg="' + mode + '">' + (editing ? t('save') : t('create')) + '</button></div>' +
         '<div class="pad"><div id="formMsg"></div>' +
         '<div class="field"><label>' + t('title') + ' *</label><input id="fTitle" value="' + escHtml(v('Title')) + '"></div>' +
         '<div class="field"><label>' + t('description') + '</label><textarea id="fDesc">' + escHtml(v('Description')) + '</textarea></div>' +
@@ -1402,10 +1424,11 @@
         '<div class="two"><div class="field"><label>' + t('dueDate') + '</label><input type="date" id="fDue" value="' + escHtml(v('Due Date')) + '"></div>' +
         '<div class="field"><label>' + t('time') + '</label><input type="time" id="fTime" value="' + escHtml(String(v('Due Time')).substring(0, 5)) + '"><div class="hint">' + t('timeHint') + '</div></div></div>' +
         '<div class="field"><label>' + t('repeats') + '</label><select id="fRec">' + rec + '</select></div>' +
-        (task ? '<div class="field"><label>' + t('adminPw') + ' *</label><input type="password" id="fPw" autocomplete="off"></div>'
+        (subs ? '<label class="checkline"><input type="checkbox" id="fCopySubs" checked> ' + t('copySubtasks', { n: subs }) + '</label>' : '') +
+        (editing ? '<div class="field"><label>' + t('adminPw') + ' *</label><input type="password" id="fPw" autocomplete="off"></div>'
               : '<div class="field"><label>' + t('addPhotos') + '</label><input type="file" id="fPhotos" accept="image/*" multiple></div>') +
         // A second, full-width Save at the bottom, where your thumb is after filling in the form
-        '<button class="btn block" id="formSave2" data-act="saveForm" data-arg="' + mode + '" style="margin-top:.4rem;padding:1rem">' + (task ? t('save') : t('create')) + '</button>' +
+        '<button class="btn block" id="formSave2" data-act="saveForm" data-arg="' + mode + '" style="margin-top:.4rem;padding:1rem">' + (editing ? t('save') : t('create')) + '</button>' +
         '</div>';
       openSheet('formSheet');
     }
@@ -1431,15 +1454,30 @@
         return;
       }
       var photos = Array.prototype.slice.call($('fPhotos').files || []);
+      var copySubs = mode === 'duplicate' && $('fCopySubs') && $('fCopySubs').checked ? S.subtasks.map(function(x) { return x.Text; }) : [];
       if (photos.length > 5) { fieldError('fPhotos', t('max5')); return; }
       for (var i = 0; i < photos.length; i++) { var ve = validatePhoto(photos[i]); if (ve) { fieldError('fPhotos', ve); return; } }
       setFormBusy(true);
       $('formMsg').innerHTML = '<div class="loading">' + t('saving') + '</div>';
       server(function(r) {
         if (!r.success) { fail(r.error || 'Error'); return; }
-        var finish = function() { setFormBusy(false); closeTopSheet(); showToast(t('taskCreated')); loadTasks(); loadActivity(); };
-        if (photos.length) { $('formMsg').innerHTML = '<div class="loading">' + t('uploading') + '</div>'; uploadPhotos(r.taskId, null, photos, title, finish); }
-        else finish();
+        var newId = r.taskId;
+        var finish = function() {
+          setFormBusy(false); closeTopSheet(); showToast(t(mode === 'duplicate' ? 'taskDuplicated' : 'taskCreated')); loadActivity();
+          // After duplicating, the open task sheet switches to the new copy
+          loadTasks(function() { if (mode === 'duplicate' && newId && taskById(newId)) openTask(newId, true); });
+        };
+        var afterSubs = function() {
+          if (photos.length) { $('formMsg').innerHTML = '<div class="loading">' + t('uploading') + '</div>'; uploadPhotos(newId, null, photos, title, finish); }
+          else finish();
+        };
+        // Subtasks are copied one at a time, in order, all unchecked
+        var i = 0, nextSub = function() {
+          if (i >= copySubs.length) { afterSubs(); return; }
+          var text = copySubs[i++];
+          server(function() { nextSub(); }, function() { nextSub(); }).addSubtask(newId, text);
+        };
+        nextSub();
       }, fail).createTask(title, desc, assignee, pri, loc, due, time, rec, '');
     }
     function openDelete() {
@@ -1628,13 +1666,20 @@
     // ═══════════════════════════════════════════
     var ACT = {
       signIn: submitPin, signOut: signOut,
-      tab: switchTab, refresh: function() { loadTasks(); loadActivity(); loadLists(); },
+      // Tapping Tasks in the tab bar always shows the full, unfiltered list
+      tab: function(tab) {
+        if (tab === 'tasks' && filterCount()) { resetFilters(); if (S.tab === 'tasks') { renderFloatbar(); renderTasks(); } }
+        switchTab(tab);
+      },
+      resetFilters: function() { resetFilters(); renderFloatbar(); renderTasks(); },
+      refresh: function() { loadTasks(); loadActivity(); loadLists(); },
       openTask: openTask, toggleSec: toggleSection, goSection: goToSection, goLocation: goLocation,
       toggleView: function() { S.view = S.view === 'location' ? 'date' : 'location'; lsSet('ssl_view', S.view); renderFloatbar(); renderTasks(); },
       openFilters: openFilters, applyFilters: function() { applyFilters(false); }, clearFilters: function() { applyFilters(true); },
       newTask: function() { openForm('create'); },
       closeTop: closeTopSheet, openMenu: openMenu, closeMenu: closeMenu,
-      menuEdit: function() { closeMenu(); openForm('edit'); }, menuDelete: function() { closeMenu(); openDelete(); },
+      menuEdit: function() { closeMenu(); openForm('edit'); }, menuDuplicate: function() { closeMenu(); openForm('duplicate'); },
+      menuCopyLink: function() { closeMenu(); copyLink(); }, menuDelete: function() { closeMenu(); openDelete(); },
       copyLink: copyLink, completeTask: completeTask, reopenTask: function() { reopenTask(); },
       toggleSub: toggleSub, addSub: addSub, editSub: editSub, deleteSub: deleteSub,
       postComment: postComment, openPhoto: openPhoto,
