@@ -1157,7 +1157,7 @@
       S.taskId = id; S.subtasks = []; S.photos = []; S.comments = []; S.detailLoaded = false; S.posting = false;
       $('taskSheetInner').innerHTML = '';  // so an unsent draft from the previous task doesn't carry over
       renderTaskSheet();
-      if (!inPlace) openSheet('taskSheet');  // inPlace: show a different task in the sheet that's already open
+      if (inPlace !== true) openSheet('taskSheet');  // inPlace: show a different task in the sheet that's already open
       loadTaskDetails(id);
     }
     function loadTaskDetails(id) {
@@ -1673,7 +1673,7 @@
       },
       resetFilters: function() { resetFilters(); renderFloatbar(); renderTasks(); },
       refresh: function() { loadTasks(); loadActivity(); loadLists(); },
-      openTask: openTask, toggleSec: toggleSection, goSection: goToSection, goLocation: goLocation,
+      openTask: function(id) { openTask(id); }, toggleSec: toggleSection, goSection: goToSection, goLocation: goLocation,
       toggleView: function() { S.view = S.view === 'location' ? 'date' : 'location'; lsSet('ssl_view', S.view); renderFloatbar(); renderTasks(); },
       openFilters: openFilters, applyFilters: function() { applyFilters(false); }, clearFilters: function() { applyFilters(true); },
       newTask: function() { openForm('create'); },
