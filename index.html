@@ -42,7 +42,9 @@
     .vdate { color:var(--muted); font-size:1rem; margin-bottom:.2rem; }
     .loading { color:var(--muted); text-align:center; padding:1.5rem; }
     .empty { color:var(--muted); text-align:center; padding:1.6rem 1rem; }
-    .error-msg { color:var(--red); background:var(--red-bg); border-radius:.6rem; padding:.7rem .8rem; margin:.6rem 0; }
+    .error-msg { color:#fff; background:var(--red); border-radius:.65rem; padding:.75rem .9rem; margin:.6rem 0; font-weight:600; display:flex; gap:.5rem; align-items:flex-start; animation:shake .35s; }
+    .error-msg::before { content:'\26A0\FE0F'; }
+    @keyframes shake { 0%,100% { transform:none; } 25% { transform:translateX(-6px); } 50% { transform:translateX(5px); } 75% { transform:translateX(-3px); } }
 
     /* ── TAB BAR + FLOATING BAR ────────────────── */
     .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--surface); border-top:1px solid var(--border); display:flex; justify-content:center; padding:.3rem 0 calc(.3rem + env(safe-area-inset-bottom)); }
@@ -152,14 +154,15 @@
     .sheet.bottom.open { transform:none; }
     .scrim { position:fixed; top:0; right:0; bottom:0; left:0; z-index:210; background:var(--overlay); display:none; }
     .scrim.on { display:block; }
-    .topbar { position:sticky; top:0; z-index:5; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.5rem; padding:calc(env(safe-area-inset-top) + .5rem) .7rem .5rem; }
+    .topbar { position:sticky; top:0; z-index:5; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.5rem; padding:calc(env(safe-area-inset-top) + .8rem) .7rem .6rem; min-height:3.4rem; }
     .sheet.bottom .topbar { background:var(--surface); padding-top:.7rem; border-radius:1.2rem 1.2rem 0 0; }
     .topbar .ttl { flex:1; text-align:center; font-weight:600; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .topbar .spacer { flex:1; }
-    .iconbtn { width:2.5rem; height:2.5rem; border-radius:50%; border:0; background:none; color:var(--text); display:flex; align-items:center; justify-content:center; flex:0 0 auto; padding:0; }
+    .iconbtn { width:2.75rem; height:2.75rem; border-radius:50%; border:0; background:none; color:var(--text); display:flex; align-items:center; justify-content:center; flex:0 0 auto; padding:0; }
     .iconbtn svg { width:1.45rem; height:1.45rem; }
-    .textbtn { background:none; border:0; color:var(--blue); font-size:1rem; padding:.5rem .4rem; font-weight:500; }
-    .textbtn.strong { font-weight:700; }
+    /* Top-bar text buttons: at least 44px tall so they're easy to hit */
+    .textbtn { background:none; border:0; color:var(--blue); font-size:1rem; font-weight:500; min-height:2.75rem; padding:.6rem .5rem; }
+    .textbtn.strong { font-weight:700; background:var(--accent); color:#fff; border-radius:1.4rem; padding:.6rem 1.1rem; }
     .pillbtn { border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:1.4rem; padding:.5rem 1rem; display:flex; align-items:center; gap:.45rem; font-size:.98rem; }
     .pillbtn svg { width:1.1rem; height:1.1rem; }
     .pillbtn.done { background:var(--green); border-color:var(--green); color:#fff; }
@@ -226,11 +229,17 @@
     /* ── FORMS ─────────────────────────────────── */
     .field { margin-bottom:.95rem; }
     .field label { display:block; color:var(--muted); font-size:.9rem; margin-bottom:.35rem; }
-    .input, .field input, .field select, .field textarea { width:100%; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:.65rem; padding:.72rem .8rem; font-size:1rem; font-family:inherit; }
+    .input, .field input, .field select, .field textarea { width:100%; min-width:0; max-width:100%; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:.65rem; padding:.72rem .8rem; font-size:1rem; font-family:inherit; }
+    /* iPhone gives date/time boxes a built-in minimum width that overflows two-column rows */
+    .field input[type="date"], .field input[type="time"] { -webkit-appearance:none; appearance:none; display:block; min-height:2.95rem; }
+    .field input::-webkit-date-and-time-value { text-align:left; }
+    .field.invalid input, .field.invalid select, .field.invalid textarea { border:2px solid var(--red); box-shadow:0 0 0 3px var(--red-bg); }
+    .field-err { color:var(--red); font-weight:700; margin-top:.4rem; font-size:.95rem; animation:shake .35s; }
+    .field-err::before { content:'\26A0\FE0F  '; }
     .sheet.bottom .field select, .sheet.bottom .field input { background:var(--surface2); }
     .field textarea { min-height:5.5rem; resize:vertical; }
     .field .hint { color:var(--faint); font-size:.82rem; margin-top:.25rem; }
-    .two { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+    .two { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:.7rem; }
     .btn { border:0; border-radius:.65rem; padding:.78rem 1rem; font-size:1rem; font-weight:600; background:var(--accent); color:#fff; }
     .btn.block { display:block; width:100%; }
     .btn.danger { background:var(--red); color:#fff; }
@@ -252,6 +261,8 @@
     .menu-scrim.on { display:block; }
     .toast { position:fixed; left:.8rem; right:.8rem; bottom:calc(5rem + env(safe-area-inset-bottom)); z-index:600; max-width:520px; margin:0 auto; background:#2c3e50; color:#fff; border-radius:.75rem; padding:.75rem .9rem; display:none; align-items:center; justify-content:space-between; gap:.8rem; box-shadow:var(--shadow); }
     .toast.on { display:flex; }
+    /* On full-screen sheets, show messages below the top bar so they never cover a bottom button */
+    body.noscroll .toast { bottom:auto; top:calc(env(safe-area-inset-top) + 4.4rem); }
     .toast button { background:var(--accent); color:#fff; border:0; border-radius:.5rem; padding:.55rem .85rem; font-weight:700; font-size:.95rem; white-space:nowrap; }
     .lightbox { position:fixed; top:0; right:0; bottom:0; left:0; z-index:700; background:rgba(0,0,0,.94); display:none; align-items:center; justify-content:center; }
     .lightbox.on { display:flex; }
@@ -399,7 +410,33 @@
     function lsSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
     function lsDel(k) { try { localStorage.removeItem(k); } catch(e) {} }
     function lsJSON(k, d) { try { return JSON.parse(lsGet(k, '')) || d; } catch(e) { return d; } }
-    function showMsg(id, msg) { $(id).innerHTML = '<div class="error-msg">' + escHtml(msg) + '</div>'; }
+    // Warning box, scrolled into view so it can't appear off-screen
+    function showMsg(id, msg) {
+      var el = $(id);
+      el.innerHTML = '<div class="error-msg">' + escHtml(msg) + '</div>';
+      if (el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    // Warning attached to a specific field: red outline, message right under it, cursor placed in it.
+    // Clears itself as soon as the person types or changes the field.
+    function fieldError(inputId, msg) {
+      var input = $(inputId), field = input && input.closest('.field');
+      if (!field) return;
+      clearFieldErrors();
+      field.classList.add('invalid');
+      var err = document.createElement('div');
+      err.className = 'field-err'; err.textContent = msg;
+      field.appendChild(err);
+      input.focus();
+      field.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      var clear = function() { field.classList.remove('invalid'); if (err.parentNode) err.parentNode.removeChild(err); input.removeEventListener('input', clear); input.removeEventListener('change', clear); };
+      input.addEventListener('input', clear); input.addEventListener('change', clear);
+    }
+    function clearFieldErrors() {
+      var errs = document.querySelectorAll('.field-err'), bad = document.querySelectorAll('.field.invalid'), i;
+      for (i = 0; i < errs.length; i++) errs[i].parentNode.removeChild(errs[i]);
+      for (i = 0; i < bad.length; i++) bad[i].classList.remove('invalid');
+    }
+    var isPasswordError = function(m) { return /password|contrase/i.test(m || ''); };
     function setBusy(id, on) { var b = $(id); if (b) b.disabled = !!on; }
 
     // ── ICONS (stroke icons, sized by CSS) ─────
@@ -625,6 +662,8 @@
     }
     function showSignIn(msg) {
       ['ssl_pin','ssl_user','ssl_admin','ssl_lang_applied'].forEach(lsDel);
+      // Forget the previous person's Activity state so the next person starts fresh
+      S.activity = []; S.seen = ''; S.viewSeen = null; S.activityLoaded = false;
       $('pinInput').value = '';
       $('pinMsg').innerHTML = msg ? '<div class="error-msg">' + escHtml(msg) + '</div>' : '';
       $('signin').classList.add('on');
@@ -665,7 +704,8 @@
     function loadActivity() {
       server(function(r) {
         if (!r.success) return;
-        S.activity = r.items; S.seen = r.seen || ''; S.activityLoaded = true;
+        // "Last read" only moves forward, so a reload that crosses paths with mark-as-read can't bring the dot back
+        S.activity = r.items; if ((r.seen || '') > S.seen) S.seen = r.seen; S.activityLoaded = true;
         updateActivityDot();
         if (S.tab === 'activity') { renderActivity(); markSeen(); }
       }, function() {}).getActivityJSON();
@@ -1318,7 +1358,7 @@
     }
     function postComment() {
       var text = $('commentText').value.trim(), photos = Array.prototype.slice.call($('commentPhoto').files || []), id = S.taskId;
-      if (!text) { showMsg('commentMsg', t('commentRequired')); return; }
+      if (!text) { fieldError('commentText', t('commentRequired')); return; }
       if (photos.length > 5) { showMsg('commentMsg', t('max5')); return; }
       for (var i = 0; i < photos.length; i++) { var ve = validatePhoto(photos[i]); if (ve) { showMsg('commentMsg', ve); return; } }
       var task = taskById(id);
@@ -1351,8 +1391,8 @@
       var pri = ['Urgent','High','Medium','Low'].map(function(p) { return opt(p, t(p), v('Priority', 'Medium')); }).join('');
       var rec = [['None', t('never')], ['Daily', t('Daily')], ['Weekly', t('Weekly')], ['Monthly', t('Monthly')], ['Yearly', t('Yearly')]].map(function(r) { return opt(r[0], r[1], v('Recurrence', 'None')); }).join('');
       $('formSheetInner').innerHTML =
-        '<div class="topbar"><button class="textbtn" data-act="closeTop" style="width:4.5rem;text-align:left">' + t('cancel') + '</button><div class="ttl">' + (task ? t('editTask') : t('newTask')) + '</div>' +
-        '<button class="textbtn strong" id="formSave" data-act="saveForm" data-arg="' + mode + '" style="width:4.5rem;text-align:right">' + (task ? t('save') : t('create')) + '</button></div>' +
+        '<div class="topbar"><button class="textbtn" data-act="closeTop">' + t('cancel') + '</button><div class="ttl">' + (task ? t('editTask') : t('newTask')) + '</div>' +
+        '<button class="textbtn strong" id="formSave" data-act="saveForm" data-arg="' + mode + '">' + (task ? t('save') : t('create')) + '</button></div>' +
         '<div class="pad"><div id="formMsg"></div>' +
         '<div class="field"><label>' + t('title') + ' *</label><input id="fTitle" value="' + escHtml(v('Title')) + '"></div>' +
         '<div class="field"><label>' + t('description') + '</label><textarea id="fDesc">' + escHtml(v('Description')) + '</textarea></div>' +
@@ -1364,53 +1404,61 @@
         '<div class="field"><label>' + t('repeats') + '</label><select id="fRec">' + rec + '</select></div>' +
         (task ? '<div class="field"><label>' + t('adminPw') + ' *</label><input type="password" id="fPw" autocomplete="off"></div>'
               : '<div class="field"><label>' + t('addPhotos') + '</label><input type="file" id="fPhotos" accept="image/*" multiple></div>') +
+        // A second, full-width Save at the bottom, where your thumb is after filling in the form
+        '<button class="btn block" id="formSave2" data-act="saveForm" data-arg="' + mode + '" style="margin-top:.4rem;padding:1rem">' + (task ? t('save') : t('create')) + '</button>' +
         '</div>';
       openSheet('formSheet');
     }
+    function setFormBusy(on) { setBusy('formSave', on); setBusy('formSave2', on); }
     function saveForm(mode) {
       var title = $('fTitle').value.trim(), desc = $('fDesc').value.trim(), assignee = $('fAssign').value, pri = $('fPri').value, loc = $('fLoc').value,
           due = $('fDue').value, time = $('fTime').value, rec = $('fRec').value;
-      if (!title || !assignee) { showMsg('formMsg', t('required')); return; }
-      var fail = function(m) { setBusy('formSave', false); showMsg('formMsg', m); };
+      clearFieldErrors(); $('formMsg').innerHTML = '';
+      if (!title) { fieldError('fTitle', t('required')); return; }
+      if (!assignee) { fieldError('fAssign', t('required')); return; }
+      // Errors go next to the field they're about (password problems under the password box)
+      var fail = function(m) { setFormBusy(false); $('formMsg').innerHTML = ''; if (mode === 'edit' && isPasswordError(m)) fieldError('fPw', m); else showMsg('formMsg', m); };
       if (mode === 'edit') {
         var pw = $('fPw').value, id = S.taskId;
-        if (!pw) { fail(t('pwRequired')); return; }
-        setBusy('formSave', true);
+        if (!pw) { fieldError('fPw', t('pwRequired')); return; }
+        setFormBusy(true);
         $('formMsg').innerHTML = '<div class="loading">' + t('saving') + '</div>';
         server(function(r) {
           if (!r.success) { fail(r.error || 'Error'); return; }
-          setBusy('formSave', false); closeTopSheet(); showToast(t('taskSaved'));
+          setFormBusy(false); closeTopSheet(); showToast(t('taskSaved'));
           loadTasks(function() { if (S.taskId === id) renderTaskSheet(); });
         }, fail).updateTask(id, title, desc, assignee, pri, loc, due, time, rec, pw);
         return;
       }
       var photos = Array.prototype.slice.call($('fPhotos').files || []);
-      if (photos.length > 5) { fail(t('max5')); return; }
-      for (var i = 0; i < photos.length; i++) { var ve = validatePhoto(photos[i]); if (ve) { fail(ve); return; } }
-      setBusy('formSave', true);
+      if (photos.length > 5) { fieldError('fPhotos', t('max5')); return; }
+      for (var i = 0; i < photos.length; i++) { var ve = validatePhoto(photos[i]); if (ve) { fieldError('fPhotos', ve); return; } }
+      setFormBusy(true);
       $('formMsg').innerHTML = '<div class="loading">' + t('saving') + '</div>';
       server(function(r) {
         if (!r.success) { fail(r.error || 'Error'); return; }
-        var finish = function() { setBusy('formSave', false); closeTopSheet(); showToast(t('taskCreated')); loadTasks(); loadActivity(); };
+        var finish = function() { setFormBusy(false); closeTopSheet(); showToast(t('taskCreated')); loadTasks(); loadActivity(); };
         if (photos.length) { $('formMsg').innerHTML = '<div class="loading">' + t('uploading') + '</div>'; uploadPhotos(r.taskId, null, photos, title, finish); }
         else finish();
       }, fail).createTask(title, desc, assignee, pri, loc, due, time, rec, '');
     }
     function openDelete() {
-      $('deleteSheetInner').innerHTML = '<div class="topbar"><span style="width:4.5rem"></span><div class="ttl">' + t('deleteQ') + '</div><button class="textbtn" data-act="closeTop" style="width:4.5rem;text-align:right">' + t('cancel') + '</button></div>' +
+      $('deleteSheetInner').innerHTML = '<div class="topbar"><span style="width:5rem"></span><div class="ttl">' + t('deleteQ') + '</div><button class="textbtn" data-act="closeTop" style="width:5rem;text-align:right">' + t('cancel') + '</button></div>' +
         '<div class="pad"><p class="muted" style="margin-top:0">' + t('deleteBody') + '</p><div class="field"><label>' + t('adminPw') + '</label><input type="password" id="delPw" autocomplete="off"></div>' +
         '<div id="delMsg"></div><button class="btn danger block" id="delBtn" data-act="confirmDelete">' + t('del') + '</button></div>';
       openSheet('deleteSheet');
     }
     function confirmDelete() {
       var pw = $('delPw').value, id = S.taskId;
-      if (!pw) { showMsg('delMsg', t('pwRequired')); return; }
+      clearFieldErrors();
+      if (!pw) { fieldError('delPw', t('pwRequired')); return; }
+      var fail = function(m) { setBusy('delBtn', false); if (isPasswordError(m)) fieldError('delPw', m); else showMsg('delMsg', m); };
       setBusy('delBtn', true);
       server(function(r) {
+        if (!r.success) { fail(r.error || 'Error'); return; }
         setBusy('delBtn', false);
-        if (!r.success) { showMsg('delMsg', r.error || 'Error'); return; }
         closeSheets(2); showToast(t('taskDeleted')); loadTasks();
-      }, function(m) { setBusy('delBtn', false); showMsg('delMsg', m); }).deleteTask(id, pw);
+      }, fail).deleteTask(id, pw);
     }
 
     // ═══════════════════════════════════════════
@@ -1466,22 +1514,22 @@
       },
       setPin: function() {
         var name = $('pinMember').value, pin = $('pinNew').value.trim(), pw = $('pinPw').value;
-        if (!name || !pin || !pw) { showMsg('pinAdminMsg', t('allRequired')); return; }
+        if (!name || !pin || !pw) { fieldError(!pin ? 'pinNew' : 'pinPw', t('allRequired')); return; }
         setBusy('setPinBtn', true);
         server(function(r) {
           setBusy('setPinBtn', false);
-          if (!r.success) { showMsg('pinAdminMsg', r.error || 'Error'); return; }
+          if (!r.success) { if (isPasswordError(r.error)) fieldError('pinPw', r.error); else showMsg('pinAdminMsg', r.error || 'Error'); return; }
           $('pinNew').value = ''; okMsg('pinAdminMsg', t('saved') + ': ' + name);
         }, function(m) { setBusy('setPinBtn', false); showMsg('pinAdminMsg', m); }).setMemberPin(name, pin, pw);
       },
       removeMember: function() {
         var name = $('pinMember').value, pw = $('pinPw').value;
-        if (!name || !pw) { showMsg('pinAdminMsg', t('allRequired')); return; }
+        if (!name || !pw) { fieldError('pinPw', t('allRequired')); return; }
         if (!window.confirm(t('removeQ', { name: name }))) return;
         setBusy('removeBtn', true);
         server(function(r) {
           setBusy('removeBtn', false);
-          if (!r.success) { showMsg('pinAdminMsg', r.error || 'Error'); return; }
+          if (!r.success) { if (isPasswordError(r.error)) fieldError('pinPw', r.error); else showMsg('pinAdminMsg', r.error || 'Error'); return; }
           loadLists(); openTeam();
         }, function(m) { setBusy('removeBtn', false); showMsg('pinAdminMsg', m); }).removeTeamMember(name, pw);
       },
@@ -1495,12 +1543,12 @@
       },
       changePw: function() {
         var o = $('pwOld').value, n = $('pwNew').value, c = $('pwConfirm').value;
-        if (!o || !n) { showMsg('pwMsg', t('allRequired')); return; }
-        if (n !== c) { showMsg('pwMsg', t('pwMismatch')); return; }
+        if (!o || !n) { fieldError(!o ? 'pwOld' : 'pwNew', t('allRequired')); return; }
+        if (n !== c) { fieldError('pwConfirm', t('pwMismatch')); return; }
         setBusy('pwBtn', true);
         server(function(r) {
           setBusy('pwBtn', false);
-          if (!r.success) { showMsg('pwMsg', r.error || 'Error'); return; }
+          if (!r.success) { if (/incorrect|incorrecta/i.test(r.error || '')) fieldError('pwOld', r.error); else showMsg('pwMsg', r.error || 'Error'); return; }
           okMsg('pwMsg', t('pwChanged')); $('pwOld').value = $('pwNew').value = $('pwConfirm').value = '';
         }, function(m) { setBusy('pwBtn', false); showMsg('pwMsg', m); }).changeDeletePassword(o, n);
       },
