@@ -39,11 +39,16 @@
     .app { max-width:680px; margin:0 auto; padding-bottom:calc(9rem + env(safe-area-inset-bottom)); }
     .view { display:none; }
     .view.active { display:block; }
-    /* Logo across the top of every tab (the file is white; the light theme shows it in black) */
-    .brand { padding:calc(env(safe-area-inset-top) + .9rem) 1.1rem 0; }
-    .brand img { display:block; height:1.75rem; width:auto; margin-left:-.18rem; }
-    html[data-theme="light"] .brand img { filter:brightness(0); opacity:.9; }
-    .vhead { display:flex; align-items:flex-end; justify-content:space-between; gap:.6rem; padding:.55rem 1.1rem .7rem; }
+    .vhead { display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:calc(env(safe-area-inset-top) + 1rem) 1.1rem .7rem; }
+    /* Logo: to the right of the page title; on Home, full width with TASKS under it, like the app icon.
+       The file is white, so the light theme shows it in black. */
+    .hright { display:flex; align-items:center; gap:.35rem; margin-left:auto; flex:0 0 auto; }
+    .hlogo { display:block; height:1.75rem; width:auto; margin-right:-.2rem; }
+    .homebrand { padding:calc(env(safe-area-inset-top) + 1.2rem) 1.1rem 0; text-align:center; }
+    .homebrand img { display:block; width:100%; max-width:27rem; height:auto; margin:0 auto; }
+    .homebrand .tasksword { color:var(--accent); font-weight:800; font-size:1.55rem; letter-spacing:.5em; padding-left:.5em; line-height:1.1; margin-top:.15rem; }
+    .homebrand + .vhead { padding-top:1rem; }
+    html[data-theme="light"] .hlogo, html[data-theme="light"] .homebrand img { filter:brightness(0); opacity:.9; }
     #confetti { position:fixed; top:0; left:0; width:100%; height:100%; z-index:900; pointer-events:none; display:none; }
     .vtitle { font-size:2rem; font-weight:700; margin:0; line-height:1.15; }
     .vdate { color:var(--muted); font-size:1rem; margin-bottom:.2rem; }
@@ -145,7 +150,7 @@
     .reshead span { color:var(--muted); margin-left:auto; padding-right:.6rem; white-space:nowrap; }
 
     /* ── ACCOUNT ───────────────────────────────── */
-    .profile { text-align:center; padding:1rem 1rem 1rem; }
+    .profile { text-align:center; padding:calc(env(safe-area-inset-top) + 1.4rem) 1rem 1rem; }
     .profile .avatar { margin:0 auto .7rem; }
     .profile h2 { margin:0; font-size:1.55rem; }
     .profile p { margin:.2rem 0 0; color:var(--muted); }
@@ -205,6 +210,12 @@
     .d-row { display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
     .checkline { display:flex; align-items:center; gap:.6rem; padding:.7rem 0 1rem; font-size:1rem; cursor:pointer; }
     .checkline input { width:1.3rem; height:1.3rem; margin:0; accent-color:var(--green); }
+    a.loc-pill.link { color:var(--text); text-decoration:none; box-shadow:inset 0 0 0 1px var(--border); }
+    .lbtn .grow small { display:block; color:var(--muted); font-size:.8rem; }
+    .lbtn.locrow { gap:.5rem; }
+    .lbtn.locrow .grow { white-space:normal; overflow-wrap:anywhere; }
+    .lbtn.locrow .textbtn { white-space:nowrap; flex:0 0 auto; }
+    .lbtn.locrow .iconbtn svg { width:1.15rem; height:1.15rem; }
     .loc-pill { display:inline-flex; align-items:center; gap:.45rem; background:var(--surface2); border-radius:.45rem; padding:.38rem .75rem; font-weight:500; }
     .maplink { display:inline-flex; align-items:center; gap:.3rem; color:var(--blue); text-decoration:none; font-weight:500; padding:.38rem .2rem; vertical-align:middle; }
     .maplink svg { width:1.05rem; height:1.05rem; }
@@ -311,12 +322,11 @@
 
   <canvas id="confetti"></canvas>
   <div class="app">
-    <div class="brand"><img src="logo.png" alt="Soundslinger"></div>
     <section class="view" id="view-home"></section>
     <section class="view" id="view-tasks"></section>
     <section class="view" id="view-activity"></section>
     <section class="view" id="view-search">
-      <div class="vhead"><h1 class="vtitle" id="searchTitle"></h1></div>
+      <div class="vhead"><h1 class="vtitle" id="searchTitle"></h1><div class="hright"><img class="hlogo" src="logo.png" alt="Soundslinger"></div></div>
       <div class="searchbox"><span id="searchIcon"></span><input type="search" id="searchInput" autocomplete="off"></div>
       <div id="searchBody"></div>
     </section>
@@ -353,7 +363,7 @@
     // inside Google's frame and works in any browser, signed in to Google or not.
     // Change BUILD with every release. The app compares it with the copy on the server and reloads
     // itself when they differ, since Home Screen apps can keep running an old copy for a long time.
-    var BUILD = 'BUILD_ID:2026-10-05.3';
+    var BUILD = 'BUILD_ID:2026-10-05.4';
     var API_URL = window.SSG_API_URL || 'https://script.google.com/macros/s/AKfycbyfgahbomxXh-cEYFgfhe1brFF7jG8qQl62zvIIZZdAtP6mTYRyTM31E-HrYFqfMeqYFw/exec';
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
@@ -361,7 +371,7 @@
       'changeDeletePassword','auditOrphansJSON','deleteOrphansJSON',
       'getTeamAdminJSON','setMemberLanguage','getLoginLogJSON',
       'getSubtasksJSON','addSubtask','updateSubtask','deleteSubtask','toggleSubtask',
-      'getActivityJSON','markActivitySeen','getBootJSON','getTaskDetailsJSON'];
+      'getActivityJSON','markActivitySeen','getBootJSON','getTaskDetailsJSON','getPlacesJSON','setLocationMap'];
 
     // Short device label for the login log, e.g. "iPhone - Safari (Home Screen)"
     function deviceLabel() {
@@ -379,11 +389,12 @@
     //
     // Requests go out ONE AT A TIME. When several reach Apps Script at the same moment, Google sometimes
     // holds one for ~30 seconds and then answers with a web page instead of data. Requests that only
-    // read data are also given a time limit and retried quietly; requests that change something are
-    // never repeated automatically, because the first try may have gone through.
+    // read data are also given a time limit and retried quietly, and so are the few changes that are
+    // harmless to send twice (complete, reopen, check a subtask). Other changes are never repeated
+    // automatically, because the first try may have gone through.
     var READ_FNS = { signIn: 1, whoAmI: 1, getTasksJSON: 1, getLocationsJSON: 1, getTeamJSON: 1, getCommentsJSON: 1, getPhotosJSON: 1,
       getSubtasksJSON: 1, getActivityJSON: 1, markActivitySeen: 1, getTeamAdminJSON: 1, getLoginLogJSON: 1,
-      getBootJSON: 1, getTaskDetailsJSON: 1 };
+      getBootJSON: 1, getTaskDetailsJSON: 1, getPlacesJSON: 1, completeTask: 1, reopenTask: 1, toggleSubtask: 1 };
     var READ_TIMEOUT_MS = 15000, READ_RETRIES = 2;
     var apiQueue = [], apiBusy = false;
     function callApi(fn, args, onOk, onFail, pinOverride) {
@@ -535,6 +546,13 @@
       morning: ['Good morning, {name}', 'Buenos días, {name}'], afternoon: ['Good afternoon, {name}', 'Buenas tardes, {name}'], evening: ['Good evening, {name}', 'Buenas noches, {name}'],
       overdue: ['Overdue', 'Vencidas'], dueToday: ['Due today', 'Para hoy'], thisWeek: ['This week', 'Esta semana'],
       recents: ['Recents', 'Recientes'], noRecents: ['Tasks you open will appear here.', 'Las tareas que abra aparecerán aquí.'],
+      noGps: ['No map set', 'Sin mapa'], setGps: ['Set map', 'Poner mapa'], editGps: ['Map', 'Mapa'], gpsCoords: ['Map link or GPS coordinates', 'Enlace de mapa o coordenadas GPS'],
+      googleLink: ['Google Maps link', 'Enlace de Google Maps'], appleLink: ['Apple Maps link', 'Enlace de Apple Maps'],
+      gpsHint: ['Paste a link shared from Google Maps or Apple Maps, type coordinates, or stand there and use the button below.', 'Pegue un enlace compartido desde Google Maps o Apple Maps, escriba coordenadas, o párese allí y use el botón de abajo.'],
+      useMyLocation: ['Use my current location', 'Usar mi ubicación actual'], removeGps: ['Remove map', 'Quitar mapa'],
+      gpsInvalid: ['Paste a Google Maps or Apple Maps link, or enter coordinates like 27.12345, -80.98765', 'Pegue un enlace de Google Maps o Apple Maps, o escriba coordenadas como 27.12345, -80.98765'],
+      gpsUnavailable: ['Could not get your location. Check that Location is allowed for this app.', 'No se pudo obtener su ubicación. Verifique que la ubicación esté permitida para esta aplicación.'],
+      needsServerUpdate: ['The server code needs to be updated before this works.', 'Hay que actualizar el código del servidor para que esto funcione.'],
       locations: ['Locations', 'Ubicaciones'], noLocation: ['No location', 'Sin ubicación'],
       stats: ['Stats', 'Estadísticas'], last30: ['Last 30 days', 'Últimos 30 días'], lastN: ['Last {n} days', 'Últimos {n} días'], seeAll: ['See all', 'Ver todo'],
       completedN: ['Completed', 'Completadas'], onTime: ['On time', 'A tiempo'], late: ['Late', 'Tarde'], avgLate: ['Avg. days late', 'Prom. días tarde'],
@@ -700,7 +718,9 @@
       filters: lsJSON('ssl_filters', { assignee: '', location: '', priority: '' }),
       collapsed: lsJSON('ssl_collapsed', {}),
       search: { mode: '', arg: '', label: '' },
-      taskId: null, subtasks: [], photos: [], comments: [], detailLoaded: false, fromCache: false
+      taskId: null, subtasks: [], photos: [], comments: [], detailLoaded: false, fromCache: false,
+      places: {},   // location name -> {lat, lng} or {url}: map spots an admin has set for locations
+      pending: {}   // task id -> {done}: complete / reopen taps the server hasn't confirmed yet
     };
     function getPin() { return lsGet('ssl_pin', ''); }
     function getUserName() { return lsGet('ssl_user', ''); }
@@ -768,27 +788,36 @@
     // ═══════════════════════════════════════════
     // LOADING DATA
     // ═══════════════════════════════════════════
+    var HLOGO = '<img class="hlogo" src="logo.png" alt="Soundslinger">';
     function loadErrorHtml() {
       return '<div class="pad"><div class="error-msg">' + escHtml(S.loadError) + '</div><button class="btn block" data-act="refresh" style="margin-top:.9rem;padding:.9rem">' + t('tryAgain') + '</button></div>';
     }
     // A copy of the last-loaded tasks and lists is kept on this device, so the app can show them the
     // instant it opens and then refresh. It's erased on sign-out.
-    function saveCache() { lsSet('ssl_cache', JSON.stringify({ tasks: S.tasks, team: S.team, locations: S.locations })); }
+    function saveCache() { lsSet('ssl_cache', JSON.stringify({ tasks: S.tasks, team: S.team, locations: S.locations, places: S.places })); }
     function restoreCache() {
       var c = lsJSON('ssl_cache', null);
       if (!c || !Array.isArray(c.tasks)) return;
       S.tasks = c.tasks; S.team = Array.isArray(c.team) ? c.team : []; S.locations = Array.isArray(c.locations) ? c.locations : [];
+      S.places = c.places && typeof c.places === 'object' ? c.places : {};
       S.loaded = true; S.fromCache = true;
     }
     function applyTasks(tasks) {
       if (!Array.isArray(tasks)) return;
       S.tasks = tasks; S.loaded = true; S.loadError = ''; S.fromCache = false;
+      // Keep complete / reopen taps the server hasn't confirmed yet, so a refresh that was already
+      // on its way can't flip them back
+      for (var id in S.pending) { var pt = taskById(id); if (pt) setLocalStatus(pt, S.pending[id].done); }
       saveCache();
     }
-    function applyLists(team, locations) {
+    function applyLists(team, locations, places) {
       var byName = function(a, b) { return a.localeCompare(b); };
       if (Array.isArray(team)) S.team = team.sort(byName);
       if (Array.isArray(locations)) S.locations = locations.sort(byName);
+      if (Array.isArray(places)) {
+        S.places = {};
+        places.forEach(function(p) { if (p && p.name) S.places[p.name] = { lat: p.lat, lng: p.lng, url: p.url || '' }; });
+      }
       saveCache();
       refreshFormOptions();
     }
@@ -814,7 +843,7 @@
       server(function(r) {
         if (!r.success) { loadFailed(r.error || 'Error'); return; }
         applyTasks(r.tasks);
-        if (withLists) applyLists(r.team, r.locations);
+        if (withLists) applyLists(r.team, r.locations, r.places);
         renderLists();
         applyActivity(r.activity);
         if (after) after();
@@ -964,7 +993,7 @@
       if (task.Location) sub.push(escHtml(task.Location));
       if (task['Subtasks Total']) sub.push('☑ ' + (task['Subtasks Done'] || 0) + '/' + task['Subtasks Total']);
       if (task.Assignee && task.Assignee !== 'Team') sub.push(escHtml(task.Assignee));
-      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']);
+      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']) || placeMapUrl(task.Location);
       return '<div class="row' + (done ? ' done' : '') + '" data-act="openTask" data-arg="' + escHtml(task['Task ID']) + '">' +
         '<span class="check' + (done ? ' done' : '') + '">' + ICON.check + '</span>' +
         '<div class="row-body"><div class="row-main"><div class="row-title">' + escHtml(titleOf(task).primary) + '</div>' +
@@ -1009,7 +1038,7 @@
     // ═══════════════════════════════════════════
     function renderTasks() {
       var el = $('view-tasks');
-      var head = '<div class="vhead"><h1 class="vtitle">' + t('tasks') + '</h1><button class="iconbtn" data-act="refresh" aria-label="Refresh">' + ICON.refresh + '</button></div>';
+      var head = '<div class="vhead"><h1 class="vtitle">' + t('tasks') + '</h1><div class="hright"><button class="iconbtn" data-act="refresh" aria-label="Refresh">' + ICON.refresh + '</button>' + HLOGO + '</div></div>';
       if (!S.loaded) { el.innerHTML = head + (S.loadError ? loadErrorHtml() : '<div class="loading">' + t('loading') + '</div>'); return; }
       var tasks = S.tasks.filter(matchesFilters);
       var html = head;
@@ -1079,7 +1108,8 @@
     function renderHome() {
       var now = new Date(), h = now.getHours();
       var greet = t(h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening', { name: escHtml(getUserName()) });
-      var html = '<div class="vhead" style="display:block"><div class="vdate">' + escHtml(fmtLong(now)) + '</div><h1 class="vtitle">' + greet + '</h1></div>';
+      var html = '<div class="homebrand"><img src="logo.png" alt="Soundslinger"><div class="tasksword">TASKS</div></div>' +
+        '<div class="vhead" style="display:block"><div class="vdate">' + escHtml(fmtLong(now)) + '</div><h1 class="vtitle">' + greet + '</h1></div>';
       if (!S.loaded) { $('view-home').innerHTML = html + (S.loadError ? loadErrorHtml() : '<div class="loading">' + t('loading') + '</div>'); return; }
       var g = dateGroups(S.tasks);
       html += '<div class="card"><div class="tiles">' +
@@ -1133,7 +1163,7 @@
     // ═══════════════════════════════════════════
     function renderActivity() {
       if (S.viewSeen === null && S.activityLoaded) S.viewSeen = S.seen;
-      var me = getUserName(), html = '<div class="vhead"><h1 class="vtitle">' + t('activity') + '</h1></div>';
+      var me = getUserName(), html = '<div class="vhead"><h1 class="vtitle">' + t('activity') + '</h1><div class="hright">' + HLOGO + '</div></div>';
       if (S.loaded) {
         var g = dateGroups(S.tasks.filter(function(x) { return x.Assignee === me || x.Assignee === 'Team'; }));
         if (g.overdue.length) html += '<div class="ahead">' + ICON.cal + t('yourOverdue') + '</div><div class="acard">' + g.overdue.map(rowHtml).join('') + '</div>';
@@ -1331,6 +1361,22 @@
       if (n !== null && n < 0) return { cls: 's-overdue', label: t('stOverdue'), note: -n === 1 ? t('dayOverdue') : t('daysOverdue', { n: -n }) };
       return { cls: 's-active', label: t('stActive'), note: '' };
     }
+    // Only links to Google Maps or Apple Maps count as map links
+    function isMapLink(url) {
+      url = String(url || '');
+      return /^https:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps|(www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.apple\.com|maps\.apple)(\/|\?)/i.test(url) && url.length <= 600 && !/[\s"'<>]/.test(url);
+    }
+    // Map link for a location: the link an admin pasted, or Google Maps at its GPS coordinates
+    // ('' when the location has neither)
+    function placeMapUrl(name) {
+      var p = name ? S.places[name] : null;
+      if (!p) return '';
+      return p.url && isMapLink(p.url) ? p.url : coordsMapUrl(p.lat, p.lng);
+    }
+    function placeLabel(p) {
+      if (p.url) return /apple/i.test(p.url) ? t('appleLink') : t('googleLink');
+      return p.lat + ', ' + p.lng;
+    }
     function coordsMapUrl(latVal, lngVal) {
       var lat = parseFloat(latVal), lng = parseFloat(lngVal);
       if (!isFinite(lat) || !isFinite(lng)) return '';
@@ -1353,10 +1399,14 @@
       html += '<div class="d-meta"><div class="m">' + avatar(task.Assignee) + '<div style="min-width:0"><small>' + t('assignedTo') + '</small><b>' + escHtml(personLabel(task.Assignee)) + '</b></div></div>' +
         '<div class="m"><span class="calicon' + (overdue ? ' overdue' : '') + '">' + ICON.cal + '</span><div style="min-width:0"><small>' + t('dueDate') + '</small><b' + (overdue ? ' class="overdue"' : '') + '>' + escHtml(due) + '</b></div></div>' +
         (task.Recurrence && task.Recurrence !== 'None' ? '<span class="recur" title="' + escHtml(t('repeats') + ': ' + t(task.Recurrence)) + '">' + ICON.repeat + '</span>' : '') + '</div>';
-      // Location (pill + photo map)
-      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']);
+      // Location: the pill opens the location's own GPS spot when it has one; "Map" opens the spot
+      // where the task's photo was taken, or the location's spot when there's no photo location
+      var placeUrl = placeMapUrl(task.Location);
+      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']) || placeUrl;
+      var pillInner = '<span class="swatch" style="background:' + colorFor(task.Location) + '"></span>' + escHtml(task.Location);
       html += '<div class="d-sec"><div class="d-row"><span class="muted">' + t('location') + '</span><span>' +
-        (task.Location ? '<span class="loc-pill"><span class="swatch" style="background:' + colorFor(task.Location) + '"></span>' + escHtml(task.Location) + '</span>' : (mapUrl ? '' : '<span class="muted">' + t('notSet') + '</span>')) +
+        (task.Location ? (placeUrl ? '<a class="loc-pill link" href="' + escHtml(placeUrl) + '" target="_blank" rel="noopener">' + pillInner + '</a>' : '<span class="loc-pill">' + pillInner + '</span>')
+          : (mapUrl ? '' : '<span class="muted">' + t('notSet') + '</span>')) +
         (mapUrl ? ' <a class="maplink" href="' + escHtml(mapUrl) + '" target="_blank" rel="noopener">' + ICON.map + t('map') + '</a>' : '') + '</span></div></div>';
       // Priority / Status table
       var st = statusInfo(task), p = task.Priority || 'Medium';
@@ -1478,28 +1528,46 @@
       };
       confettiRaf = raf(frame);
     }
-    function completeTask() {
-      var id = S.taskId; if (!id) return;
-      celebrate();
-      setBusy('completeBtn', true);
-      server(function(r) {
-        setBusy('completeBtn', false);
-        if (!r.success) { showToast(r.error || 'Error'); return; }
-        loadTasks(function() { if (S.taskId === id) renderTaskSheet(); });
-        showToast(t('taskCompleted'), function() { reopenTask(id, true); });
-      }, function(m) { setBusy('completeBtn', false); showToast(m); }).completeTask(id);
+    // Marking a task complete (or reopening it) shows on screen at once; the server is told in the
+    // background. If the server refuses or can't be reached, the change is put back and a message shows.
+    function setLocalStatus(task, done) {
+      if (done) {
+        if (task.Status === 'Complete') return;
+        var n = new Date(), two = function(x) { return (x < 10 ? '0' : '') + x; };
+        task.Status = 'Complete'; task['Completed By'] = getUserName();
+        task['Completed Date'] = n.getFullYear() + '-' + two(n.getMonth() + 1) + '-' + two(n.getDate());
+        task['Completed Time'] = two(n.getHours()) + ':' + two(n.getMinutes()) + ':' + two(n.getSeconds());
+      } else {
+        if (task.Status !== 'Complete') return;
+        task.Status = 'Active'; task['Completed By'] = ''; task['Completed Date'] = ''; task['Completed Time'] = '';
+      }
     }
+    function changeStatus(id, done, fromUndo) {
+      var task = taskById(id); if (!task) return;
+      var mine = S.pending[id] = { done: done };
+      setLocalStatus(task, done);
+      if (S.taskId === id) renderTaskSheet();
+      renderLists();
+      if (done) { celebrate(); showToast(t('taskCompleted'), function() { changeStatus(id, false, true); }); }
+      else if (fromUndo) showToast(t('restored'));
+      var settle = function(ok, msg) {
+        if (S.pending[id] !== mine) return;  // tapped again since; the newer tap decides
+        delete S.pending[id];
+        if (ok) { loadAll(false, function() { if (S.taskId === id) renderTaskSheet(); }); return; }
+        var cur = taskById(id);
+        if (cur) setLocalStatus(cur, !done);
+        saveCache();
+        if (S.taskId === id) renderTaskSheet();
+        renderLists();
+        showToast(msg);
+      };
+      var run = server(function(r) { settle(!!r.success, r.error || 'Error'); }, function(m) { settle(false, m); });
+      if (done) run.completeTask(id); else run.reopenTask(id);
+      saveCache();
+    }
+    function completeTask() { if (S.taskId) changeStatus(S.taskId, true); }
     // Reopen also removes the next occurrence of a recurring task if nobody has touched it yet
-    function reopenTask(id, fromUndo) {
-      id = id || S.taskId; if (!id) return;
-      setBusy('completeBtn', true);
-      server(function(r) {
-        setBusy('completeBtn', false);
-        if (!r.success) { showToast(r.error || 'Error'); return; }
-        loadTasks(function() { if (S.taskId === id) renderTaskSheet(); });
-        if (fromUndo) showToast(t('restored'));
-      }, function(m) { setBusy('completeBtn', false); showToast(m); }).reopenTask(id);
-    }
+    function reopenTask(id, fromUndo) { id = id || S.taskId; if (id) changeStatus(id, false, fromUndo); }
 
     // ── ••• menu: copy link for everyone; edit / duplicate / delete for admins ──
     function openMenu() {
@@ -1817,8 +1885,64 @@
     };
     function openLocations() {
       adminSheet(t('locations'), '<div class="card" style="margin:0">' + S.locations.map(function(l) {
-        return '<div class="lbtn"><span class="swatch" style="background:' + colorFor(l) + '"></span><span class="grow">' + escHtml(l) + '</span><button class="textbtn" style="color:var(--red)" data-act="admin" data-fn="removeLocation" data-arg="' + escHtml(l) + '">' + t('remove') + '</button></div>';
+        var p = S.places[l];
+        return '<div class="lbtn locrow"><span class="swatch" style="background:' + colorFor(l) + '"></span><span class="grow">' + escHtml(l) +
+          '<small>' + (p ? '\ud83d\udccd ' + escHtml(placeLabel(p)) : t('noGps')) + '</small></span>' +
+          '<button class="textbtn" style="color:var(--blue)" data-act="editGps" data-arg="' + escHtml(l) + '">' + t(p ? 'editGps' : 'setGps') + '</button>' +
+          '<button class="iconbtn" style="color:var(--red)" data-act="admin" data-fn="removeLocation" data-arg="' + escHtml(l) + '" aria-label="' + t('remove') + '">' + ICON.trash + '</button></div>';
       }).join('') + '<div class="addline"><input class="input" id="newLoc" placeholder="' + t('addLocation') + '"><button class="btn" data-act="admin" data-fn="addLocation">' + t('add') + '</button></div></div>');
+    }
+    // ── GPS coordinates for a location (admins) ──
+    // Accepts "27.12345, -80.98765" as copied from Google Maps, or a full Google Maps link
+    function parseCoords(text) {
+      text = String(text || '');
+      var m = /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/.exec(text) || /(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)/.exec(text);
+      if (!m) return null;
+      var lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+      if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+      return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+    }
+    var gpsName = '';
+    function openGps(name) {
+      gpsName = name;
+      var p = S.places[name];
+      $('pickSheetInner').innerHTML =
+        '<div class="topbar"><button class="textbtn" data-act="closeTop">' + t('cancel') + '</button><div class="ttl">' + escHtml(name) + '</div><button class="textbtn strong" id="gpsSave" data-act="saveGps">' + t('save') + '</button></div>' +
+        '<div class="pad"><div class="field"><label>' + t('gpsCoords') + '</label><input id="gpsInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Link or 27.12345, -80.98765" value="' + (p ? escHtml(p.url || (p.lat + ', ' + p.lng)) : '') + '">' +
+        '<div class="hint">' + t('gpsHint') + '</div></div>' +
+        '<button class="btn block" id="gpsHere" data-act="gpsHere" style="background:var(--surface2);color:var(--text)">' + t('useMyLocation') + '</button>' +
+        (p ? '<button class="btn block" data-act="clearGps" style="background:none;color:var(--red);margin-top:.5rem">' + t('removeGps') + '</button>' : '') + '</div>';
+      openSheet('pickSheet');
+    }
+    function gpsHere() {
+      if (!navigator.geolocation) { fieldError('gpsInput', t('gpsUnavailable')); return; }
+      setBusy('gpsHere', true);
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        setBusy('gpsHere', false);
+        if ($('gpsInput')) { clearFieldErrors(); $('gpsInput').value = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6); }
+      }, function() { setBusy('gpsHere', false); if ($('gpsInput')) fieldError('gpsInput', t('gpsUnavailable')); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    }
+    function saveGps(clear) {
+      // A pasted link is kept as it is and opens when the location is tapped; anything else is read as coordinates
+      var name = gpsName, text = clear ? '' : $('gpsInput').value.trim(), c = { lat: '', lng: '', url: '' };
+      if (/^https?:\/\//i.test(text)) {
+        text = text.replace(/^http:/i, 'https:');
+        if (!isMapLink(text)) { fieldError('gpsInput', t('gpsInvalid')); return; }
+        c.url = text;
+      } else if (!clear) {
+        var xy = parseCoords(text);
+        if (!xy) { fieldError('gpsInput', t('gpsInvalid')); return; }
+        c.lat = xy.lat; c.lng = xy.lng;
+      }
+      setBusy('gpsSave', true);
+      var fail = function(m) { setBusy('gpsSave', false); if ($('gpsInput')) fieldError('gpsInput', isUnknownRequest(m) ? t('needsServerUpdate') : m); };
+      server(function(r) {
+        if (!r.success) { fail(r.error || 'Error'); return; }
+        if (clear) delete S.places[name]; else S.places[name] = c.url ? { url: c.url } : { lat: c.lat, lng: c.lng, url: '' };
+        saveCache(); renderLists();
+        closeTopSheet(); openLocations();
+      }, fail).setLocationMap(name, c.lat, c.lng, c.url);
     }
     var loginLog = [];
     function openLoginLog() {
@@ -1897,6 +2021,7 @@
       closeTop: closeTopSheet, openMenu: openMenu, closeMenu: closeMenu,
       menuEdit: function() { closeMenu(); openForm('edit'); }, menuDuplicate: function() { closeMenu(); openForm('duplicate'); },
       menuCopyLink: function() { closeMenu(); copyLink(); }, menuDelete: function() { closeMenu(); openDelete(); },
+      editGps: openGps, gpsHere: gpsHere, saveGps: function() { saveGps(false); }, clearGps: function() { saveGps(true); },
       copyLink: copyLink, completeTask: completeTask, reopenTask: function() { reopenTask(); },
       toggleSub: toggleSub, addSub: addSub, editSub: editSub, deleteSub: deleteSub,
       postComment: postComment, openPhoto: openPhoto,
