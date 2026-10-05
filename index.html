@@ -15,7 +15,9 @@
   <title>Soundslinger Tasks</title>
   <style>
     /* ── THEME ─────────────────────────────────── */
-    html { font-size:17px; -webkit-text-size-adjust:100%; }
+    /* The min-height works around an iPhone Home Screen quirk: on a page too short to scroll, the
+       bottom menu would float above the bottom edge by the height of the status bar. */
+    html { font-size:17px; -webkit-text-size-adjust:100%; min-height:calc(100% + env(safe-area-inset-top)); }
     html[data-theme="dark"] {
       --bg:#1e1f21; --surface:#252628; --surface2:#2f3033; --border:#3a3b3e; --text:#f5f4f3; --muted:#a2a0a2;
       --faint:#6d6e6f; --blue:#4c7fe0; --red:#f06a6a; --red-bg:rgba(240,106,106,.17); --green:#58a182;
@@ -37,7 +39,12 @@
     .app { max-width:680px; margin:0 auto; padding-bottom:calc(9rem + env(safe-area-inset-bottom)); }
     .view { display:none; }
     .view.active { display:block; }
-    .vhead { display:flex; align-items:flex-end; justify-content:space-between; gap:.6rem; padding:calc(env(safe-area-inset-top) + 1rem) 1.1rem .7rem; }
+    /* Logo across the top of every tab (the file is white; the light theme shows it in black) */
+    .brand { padding:calc(env(safe-area-inset-top) + .9rem) 1.1rem 0; }
+    .brand img { display:block; height:1.75rem; width:auto; margin-left:-.18rem; }
+    html[data-theme="light"] .brand img { filter:brightness(0); opacity:.9; }
+    .vhead { display:flex; align-items:flex-end; justify-content:space-between; gap:.6rem; padding:.55rem 1.1rem .7rem; }
+    #confetti { position:fixed; top:0; left:0; width:100%; height:100%; z-index:900; pointer-events:none; display:none; }
     .vtitle { font-size:2rem; font-weight:700; margin:0; line-height:1.15; }
     .vdate { color:var(--muted); font-size:1rem; margin-bottom:.2rem; }
     .loading { color:var(--muted); text-align:center; padding:1.5rem; }
@@ -124,7 +131,7 @@
     .newdot { width:.6rem; height:.6rem; border-radius:50%; background:var(--blue); flex:0 0 auto; margin-top:.45rem; }
 
     /* ── SEARCH ────────────────────────────────── */
-    .searchbox { position:relative; margin:calc(env(safe-area-inset-top) + 1rem) 1rem .6rem; }
+    .searchbox { position:relative; margin:.2rem 1rem .6rem; }
     .searchbox input { width:100%; background:var(--surface2); color:var(--text); border:0; border-radius:.75rem; padding:.8rem .9rem .8rem 2.6rem; font-size:1.02rem; font-family:inherit; -webkit-appearance:none; }
     .searchbox span svg { position:absolute; left:.85rem; top:50%; transform:translateY(-50%); width:1.15rem; height:1.15rem; color:var(--muted); }
     .qhead { font-weight:600; font-size:1.12rem; padding:1rem 1.1rem .35rem; }
@@ -138,7 +145,7 @@
     .reshead span { color:var(--muted); margin-left:auto; padding-right:.6rem; white-space:nowrap; }
 
     /* ── ACCOUNT ───────────────────────────────── */
-    .profile { text-align:center; padding:calc(env(safe-area-inset-top) + 1.4rem) 1rem 1rem; }
+    .profile { text-align:center; padding:1rem 1rem 1rem; }
     .profile .avatar { margin:0 auto .7rem; }
     .profile h2 { margin:0; font-size:1.55rem; }
     .profile p { margin:.2rem 0 0; color:var(--muted); }
@@ -302,11 +309,14 @@
     <div id="pinMsg"></div>
   </div>
 
+  <canvas id="confetti"></canvas>
   <div class="app">
+    <div class="brand"><img src="logo.png" alt="Soundslinger"></div>
     <section class="view" id="view-home"></section>
     <section class="view" id="view-tasks"></section>
     <section class="view" id="view-activity"></section>
     <section class="view" id="view-search">
+      <div class="vhead"><h1 class="vtitle" id="searchTitle"></h1></div>
       <div class="searchbox"><span id="searchIcon"></span><input type="search" id="searchInput" autocomplete="off"></div>
       <div id="searchBody"></div>
     </section>
@@ -343,7 +353,7 @@
     // inside Google's frame and works in any browser, signed in to Google or not.
     // Change BUILD with every release. The app compares it with the copy on the server and reloads
     // itself when they differ, since Home Screen apps can keep running an old copy for a long time.
-    var BUILD = 'BUILD_ID:2026-10-05.2';
+    var BUILD = 'BUILD_ID:2026-10-05.3';
     var API_URL = window.SSG_API_URL || 'https://script.google.com/macros/s/AKfycbyfgahbomxXh-cEYFgfhe1brFF7jG8qQl62zvIIZZdAtP6mTYRyTM31E-HrYFqfMeqYFw/exec';
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
@@ -1156,6 +1166,7 @@
     // SEARCH TAB
     // ═══════════════════════════════════════════
     function renderSearch() {
+      $('searchTitle').textContent = t('search');
       $('searchIcon').innerHTML = ICON.search;
       $('searchInput').placeholder = t('searchPh');
       renderSearchResults();
@@ -1417,8 +1428,59 @@
     }
 
     // ── Complete / reopen (stays on the task; Undo in the toast) ──
+    // Full-screen confetti when a task is marked complete: two bursts from the bottom corners plus
+    // a shower from the top, about 3 seconds. Skipped when the phone is set to Reduce Motion.
+    var confettiRaf = 0;
+    function celebrate() {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var c = $('confetti'), ctx = c && c.getContext ? c.getContext('2d') : null;
+      var raf = window.requestAnimationFrame, caf = window.cancelAnimationFrame;
+      if (!ctx || !raf) return;
+      if (confettiRaf && caf) caf(confettiRaf);
+      var dpr = Math.min(window.devicePixelRatio || 1, 2), W = window.innerWidth, H = window.innerHeight;
+      c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.display = 'block';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var colors = ['#58a182', '#7ac943', '#f6c244', '#f06a6a', '#4c7fe0', '#b36bd4', '#ff8a3d', '#ffffff'];
+      var rnd = function(a, b) { return a + Math.random() * (b - a); };
+      var power = Math.sqrt(H / 800), parts = [], i;
+      var add = function(x, y, vx, vy, delay) {
+        parts.push({ x: x, y: y, vx: vx, vy: vy, delay: delay, w: rnd(6, 11), h: rnd(9, 16), rot: rnd(0, 6.28), spin: rnd(-.3, .3),
+          tilt: rnd(0, 6.28), tiltSpeed: rnd(.08, .2), color: colors[Math.floor(Math.random() * colors.length)], round: Math.random() < .25 });
+      };
+      for (i = 0; i < 90; i++) {  // cannons: left corner aims up and right, right corner up and left
+        var a1 = rnd(-1.45, -.75), s1 = rnd(13, 27) * power, a2 = rnd(-2.39, -1.69), s2 = rnd(13, 27) * power;
+        add(-10, H * .92, Math.cos(a1) * s1, Math.sin(a1) * s1, rnd(0, 180));
+        add(W + 10, H * .92, Math.cos(a2) * s2, Math.sin(a2) * s2, rnd(0, 180));
+      }
+      for (i = 0; i < 70; i++) add(rnd(0, W), rnd(-H * .35, -10), rnd(-1.2, 1.2), rnd(2, 6), rnd(150, 900));  // shower
+      var start = 0, last = 0, DURATION = 3200, FADE = 700;
+      var frame = function(now) {
+        if (!start) { start = now; last = now; }
+        var elapsed = now - start, step = Math.min((now - last) / 16.7, 3);
+        last = now;
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalAlpha = elapsed > DURATION - FADE ? Math.max(0, (DURATION - elapsed) / FADE) : 1;
+        for (var k = 0; k < parts.length; k++) {
+          var p = parts[k];
+          if (elapsed < p.delay) continue;
+          p.vy += .42 * step; p.vx *= Math.pow(.985, step); p.vy = Math.min(p.vy * Math.pow(.992, step), 11);
+          p.x += p.vx * step; p.y += p.vy * step; p.rot += p.spin * step; p.tilt += p.tiltSpeed * step;
+          if (p.y > H + 30) continue;
+          ctx.save();
+          ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.tilt));  // the flip makes it flutter
+          ctx.fillStyle = p.color;
+          if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.w / 2, 0, 6.2832); ctx.fill(); }
+          else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+        if (elapsed < DURATION) confettiRaf = raf(frame);
+        else { confettiRaf = 0; ctx.globalAlpha = 1; ctx.clearRect(0, 0, W, H); c.style.display = 'none'; }
+      };
+      confettiRaf = raf(frame);
+    }
     function completeTask() {
       var id = S.taskId; if (!id) return;
+      celebrate();
       setBusy('completeBtn', true);
       server(function(r) {
         setBusy('completeBtn', false);
