@@ -343,7 +343,7 @@
     // inside Google's frame and works in any browser, signed in to Google or not.
     // Change BUILD with every release. The app compares it with the copy on the server and reloads
     // itself when they differ, since Home Screen apps can keep running an old copy for a long time.
-    var BUILD = 'BUILD_ID:2026-10-05.1';
+    var BUILD = 'BUILD_ID:2026-10-05.2';
     var API_URL = window.SSG_API_URL || 'https://script.google.com/macros/s/AKfycbyfgahbomxXh-cEYFgfhe1brFF7jG8qQl62zvIIZZdAtP6mTYRyTM31E-HrYFqfMeqYFw/exec';
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
@@ -351,7 +351,7 @@
       'changeDeletePassword','auditOrphansJSON','deleteOrphansJSON',
       'getTeamAdminJSON','setMemberLanguage','getLoginLogJSON',
       'getSubtasksJSON','addSubtask','updateSubtask','deleteSubtask','toggleSubtask',
-      'getActivityJSON','markActivitySeen'];
+      'getActivityJSON','markActivitySeen','getBootJSON','getTaskDetailsJSON'];
 
     // Short device label for the login log, e.g. "iPhone - Safari (Home Screen)"
     function deviceLabel() {
@@ -372,7 +372,8 @@
     // read data are also given a time limit and retried quietly; requests that change something are
     // never repeated automatically, because the first try may have gone through.
     var READ_FNS = { signIn: 1, whoAmI: 1, getTasksJSON: 1, getLocationsJSON: 1, getTeamJSON: 1, getCommentsJSON: 1, getPhotosJSON: 1,
-      getSubtasksJSON: 1, getActivityJSON: 1, markActivitySeen: 1, getTeamAdminJSON: 1, getLoginLogJSON: 1 };
+      getSubtasksJSON: 1, getActivityJSON: 1, markActivitySeen: 1, getTeamAdminJSON: 1, getLoginLogJSON: 1,
+      getBootJSON: 1, getTaskDetailsJSON: 1 };
     var READ_TIMEOUT_MS = 15000, READ_RETRIES = 2;
     var apiQueue = [], apiBusy = false;
     function callApi(fn, args, onOk, onFail, pinOverride) {
@@ -572,7 +573,9 @@
       adminTools: ['Admin tools', 'Herramientas de administrador'], teamMembers: ['Team members', 'Miembros del equipo'], loginLog: ['Login log', 'Registro de acceso'],
       changePw: ['Change password', 'Cambiar contraseña'], audit: ['Audit orphans', 'Revisar huérfanos'], signOut: ['Sign out', 'Cerrar sesión'],
       notConfirmed: ['The server did not confirm this. Check whether it was saved before trying again.', 'El servidor no confirmó esto. Verifique si se guardó antes de intentar de nuevo.'],
-      tryAgain: ['Try again', 'Intentar de nuevo'], sessionExpired: ['For security, you are signed out after 18 hours. Please sign in again.', 'Por seguridad, la sesión se cierra después de 18 horas. Inicie sesión de nuevo.'],
+      tryAgain: ['Try again', 'Intentar de nuevo'], timeOptional: ['Time (optional)', 'Hora (opcional)'],
+      dueRequired: ['A due date is required', 'La fecha de vencimiento es obligatoria'],
+      savedCopy: ['Could not refresh. Showing the last saved copy.', 'No se pudo actualizar. Se muestra la última copia guardada.'], sessionExpired: ['For security, you are signed out after 18 hours. Please sign in again.', 'Por seguridad, la sesión se cierra después de 18 horas. Inicie sesión de nuevo.'],
       network: ['Could not reach the server. Check your connection and try again.', 'No se pudo conectar con el servidor. Verifique su conexión e intente de nuevo.'],
       addMember: ['Add member', 'Agregar miembro'], addLocation: ['Add location', 'Agregar ubicación'], remove: ['Remove', 'Quitar'],
       member: ['Team member', 'Miembro'], langSettings: ['Language settings', 'Configuración de idioma'], notSetTheirs: ['Not set (their choice)', 'Sin definir (su elección)'],
@@ -687,7 +690,7 @@
       filters: lsJSON('ssl_filters', { assignee: '', location: '', priority: '' }),
       collapsed: lsJSON('ssl_collapsed', {}),
       search: { mode: '', arg: '', label: '' },
-      taskId: null, subtasks: [], photos: [], comments: [], detailLoaded: false
+      taskId: null, subtasks: [], photos: [], comments: [], detailLoaded: false, fromCache: false
     };
     function getPin() { return lsGet('ssl_pin', ''); }
     function getUserName() { return lsGet('ssl_user', ''); }
@@ -712,7 +715,8 @@
       lsSet('ssl_lang_applied', key);
     }
     function showSignIn(msg) {
-      ['ssl_pin','ssl_user','ssl_admin','ssl_lang_applied','ssl_signed_at'].forEach(lsDel);
+      ['ssl_pin','ssl_user','ssl_admin','ssl_lang_applied','ssl_signed_at','ssl_cache'].forEach(lsDel);
+      S.tasks = []; S.team = []; S.locations = []; S.loaded = false; S.loadError = ''; S.fromCache = false;
       // Forget the previous person's Activity state so the next person starts fresh
       S.activity = []; S.seen = ''; S.viewSeen = null; S.activityLoaded = false;
       $('pinInput').value = '';
@@ -757,26 +761,72 @@
     function loadErrorHtml() {
       return '<div class="pad"><div class="error-msg">' + escHtml(S.loadError) + '</div><button class="btn block" data-act="refresh" style="margin-top:.9rem;padding:.9rem">' + t('tryAgain') + '</button></div>';
     }
+    // A copy of the last-loaded tasks and lists is kept on this device, so the app can show them the
+    // instant it opens and then refresh. It's erased on sign-out.
+    function saveCache() { lsSet('ssl_cache', JSON.stringify({ tasks: S.tasks, team: S.team, locations: S.locations })); }
+    function restoreCache() {
+      var c = lsJSON('ssl_cache', null);
+      if (!c || !Array.isArray(c.tasks)) return;
+      S.tasks = c.tasks; S.team = Array.isArray(c.team) ? c.team : []; S.locations = Array.isArray(c.locations) ? c.locations : [];
+      S.loaded = true; S.fromCache = true;
+    }
+    function applyTasks(tasks) {
+      if (!Array.isArray(tasks)) return;
+      S.tasks = tasks; S.loaded = true; S.loadError = ''; S.fromCache = false;
+      saveCache();
+    }
+    function applyLists(team, locations) {
+      var byName = function(a, b) { return a.localeCompare(b); };
+      if (Array.isArray(team)) S.team = team.sort(byName);
+      if (Array.isArray(locations)) S.locations = locations.sort(byName);
+      saveCache();
+      refreshFormOptions();
+    }
+    function applyActivity(r) {
+      if (!r || !r.success) return;
+      // "Last read" only moves forward, so a reload that crosses paths with mark-as-read can't bring the dot back
+      S.activity = r.items; if ((r.seen || '') > S.seen) S.seen = r.seen; S.activityLoaded = true;
+      updateActivityDot();
+      if (S.tab === 'activity') { renderActivity(); markSeen(); }
+    }
+    function loadFailed(msg) {
+      if (!S.loaded) { S.loadError = msg; renderLists(); }
+      else if (S.fromCache) showToast(t('savedCopy'));  // still showing the saved copy from last time
+    }
+    // Servers without getBootJSON / getTaskDetailsJSON answer "Unknown request"; then the app asks
+    // for each piece separately instead.
+    var bootSupported = true, detailsSupported = true;
+    function isUnknownRequest(msg) { return /Unknown request/.test(String(msg || '')); }
+    // Tasks + activity (+ the Team and Locations lists) in ONE request
+    function loadAll(withLists, after) {
+      if (!bootSupported) { loadTasks(after); loadActivity(); if (withLists) loadLists(); return; }
+      if (!S.loaded && S.loadError) { S.loadError = ''; renderLists(); }  // back to "Loading..." while it tries again
+      server(function(r) {
+        if (!r.success) { loadFailed(r.error || 'Error'); return; }
+        applyTasks(r.tasks);
+        if (withLists) applyLists(r.team, r.locations);
+        renderLists();
+        applyActivity(r.activity);
+        if (after) after();
+      }, function(msg) {
+        if (isUnknownRequest(msg)) { bootSupported = false; loadAll(withLists, after); return; }
+        loadFailed(msg);
+      }).getBootJSON(!!withLists);
+    }
     function loadTasks(after) {
       if (!S.loaded && S.loadError) { S.loadError = ''; renderLists(); }  // back to "Loading..." while it tries again
       server(function(tasks) {
-        if (Array.isArray(tasks)) { S.tasks = tasks; S.loaded = true; S.loadError = ''; }
+        applyTasks(tasks);
         renderLists();
         if (after) after();
-      }, function(msg) { if (!S.loaded) { S.loadError = msg; renderLists(); } }).getTasksJSON();
+      }, loadFailed).getTasksJSON();
     }
     function loadLists() {
-      server(function(r) { if (Array.isArray(r)) S.team = r.sort(function(a, b) { return a.localeCompare(b); }); }, function() {}).getTeamJSON();
-      server(function(r) { if (Array.isArray(r)) S.locations = r.sort(function(a, b) { return a.localeCompare(b); }); renderLists(); }, function() {}).getLocationsJSON();
+      server(function(r) { applyLists(r, null); }, function() {}).getTeamJSON();
+      server(function(r) { applyLists(null, r); renderLists(); }, function() {}).getLocationsJSON();
     }
     function loadActivity() {
-      server(function(r) {
-        if (!r.success) return;
-        // "Last read" only moves forward, so a reload that crosses paths with mark-as-read can't bring the dot back
-        S.activity = r.items; if ((r.seen || '') > S.seen) S.seen = r.seen; S.activityLoaded = true;
-        updateActivityDot();
-        if (S.tab === 'activity') { renderActivity(); markSeen(); }
-      }, function() {}).getActivityJSON();
+      server(applyActivity, function() {}).getActivityJSON();
     }
     function hasUnread() {
       for (var i = 0; i < S.activity.length; i++) if (S.activity[i].at > S.seen) return true;
@@ -810,17 +860,17 @@
     function startApp() {
       applyTheme(); applyFontSize();
       checkForUpdate();
+      restoreCache();
       renderAll();
-      loadTasks(function() {
-        var m = /[?&]task=([^&]+)/.exec(location.search);
-        if (m) {
-          var id = decodeURIComponent(m[1]);
+      var linked = /[?&]task=([^&]+)/.exec(location.search);
+      loadAll(true, function() {
+        if (linked) {
+          var id = decodeURIComponent(linked[1]);
+          linked = null;
           history.replaceState(null, '', location.pathname);  // so a reload doesn't reopen it
           if (taskById(id)) openTask(id);
         }
       });
-      loadLists();
-      loadActivity();
       // Pick up changes to this person's name, admin status, or language since they signed in
       callApi('whoAmI', [], function(result) {
         var before = lsGet('ssl_user', '') + lsGet('ssl_admin', '') + lsGet('ssl_lang', '') + lsGet('ssl_pref_lang', '');
@@ -1243,9 +1293,19 @@
         parts[key] = Array.isArray(r) ? r : [];
         if (--pending === 0 && S.taskId === id) { S.subtasks = parts.subs; S.photos = parts.photos; S.comments = parts.comments; S.detailLoaded = true; renderTaskSheet(); }
       };
-      server(function(r) { done('subs', r); }, function() { done('subs', []); }).getSubtasksJSON(id);
-      server(function(r) { done('photos', r); }, function() { done('photos', []); }).getPhotosJSON(id);
-      server(function(r) { done('comments', r); }, function() { done('comments', []); }).getCommentsJSON(id);
+      var separately = function() {
+        server(function(r) { done('subs', r); }, function() { done('subs', []); }).getSubtasksJSON(id);
+        server(function(r) { done('photos', r); }, function() { done('photos', []); }).getPhotosJSON(id);
+        server(function(r) { done('comments', r); }, function() { done('comments', []); }).getCommentsJSON(id);
+      };
+      if (!detailsSupported) { separately(); return; }
+      server(function(r) {
+        if (!r.success) r = {};
+        done('subs', r.subs); done('photos', r.photos); done('comments', r.comments);
+      }, function(msg) {
+        if (isUnknownRequest(msg)) { detailsSupported = false; separately(); return; }
+        done('subs', []); done('photos', []); done('comments', []);
+      }).getTaskDetailsJSON(id);
     }
     function statusInfo(task) {
       if (isDone(task)) {
@@ -1478,15 +1538,32 @@
     // ═══════════════════════════════════════════
     // CREATE / EDIT FORM
     // ═══════════════════════════════════════════
+    // Choices for the form's Assigned to and Location boxes. A current value that's no longer on the
+    // list stays selectable.
+    function peopleOptions(cur) {
+      var h = opt('', t('select'), cur) + opt('Team', t('team'), cur) + S.team.map(function(n) { return opt(n, n, cur); }).join('');
+      if (cur && cur !== 'Team' && S.team.indexOf(cur) === -1) h += opt(cur, cur, cur);
+      return h;
+    }
+    function locationOptions(cur) {
+      var h = opt('', t('notSet'), cur) + S.locations.map(function(n) { return opt(n, n, cur); }).join('');
+      if (cur && S.locations.indexOf(cur) === -1) h += opt(cur, cur, cur);
+      return h;
+    }
+    // If the lists arrive (or change) while the form is open, fill them in without touching what's picked
+    function refreshFormOptions() {
+      var a = $('fAssign'), l = $('fLoc');
+      if (!a || !l || sheetStack.indexOf('formSheet') === -1) return;
+      var av = a.value, lv = l.value;
+      a.innerHTML = peopleOptions(av); a.value = av;
+      l.innerHTML = locationOptions(lv); l.value = lv;
+    }
     function openForm(mode) {
       // 'duplicate' starts a new task filled in from the open one; it's saved like any new task
       var task = mode === 'edit' || mode === 'duplicate' ? taskById(S.taskId) : null, editing = mode === 'edit';
       var subs = mode === 'duplicate' ? S.subtasks.length : 0;
       var v = function(k, d) { return task ? (task[k] || d || '') : (d || ''); };
-      var people = opt('', t('select'), v('Assignee')) + opt('Team', t('team'), v('Assignee')) + S.team.map(function(n) { return opt(n, n, v('Assignee')); }).join('');
-      if (task && task.Assignee && task.Assignee !== 'Team' && S.team.indexOf(task.Assignee) === -1) people += opt(task.Assignee, task.Assignee, task.Assignee);
-      var locs = opt('', t('notSet'), v('Location')) + S.locations.map(function(n) { return opt(n, n, v('Location')); }).join('');
-      if (task && task.Location && S.locations.indexOf(task.Location) === -1) locs += opt(task.Location, task.Location, task.Location);
+      var people = peopleOptions(v('Assignee')), locs = locationOptions(v('Location'));
       var pri = ['Urgent','High','Medium','Low'].map(function(p) { return opt(p, t(p), v('Priority', 'Medium')); }).join('');
       var rec = [['None', t('never')], ['Daily', t('Daily')], ['Weekly', t('Weekly')], ['Monthly', t('Monthly')], ['Yearly', t('Yearly')]].map(function(r) { return opt(r[0], r[1], v('Recurrence', 'None')); }).join('');
       $('formSheetInner').innerHTML =
@@ -1498,8 +1575,8 @@
         '<div class="field"><label>' + t('assignedTo') + ' *</label><select id="fAssign">' + people + '</select></div>' +
         '<div class="two"><div class="field"><label>' + t('priority') + '</label><select id="fPri">' + pri + '</select></div>' +
         '<div class="field"><label>' + t('location') + '</label><select id="fLoc">' + locs + '</select></div></div>' +
-        '<div class="two"><div class="field"><label>' + t('dueDate') + '</label><input type="date" id="fDue" value="' + escHtml(v('Due Date')) + '"></div>' +
-        '<div class="field"><label>' + t('time') + '</label><input type="time" id="fTime" value="' + escHtml(String(v('Due Time')).substring(0, 5)) + '"><div class="hint">' + t('timeHint') + '</div></div></div>' +
+        '<div class="two"><div class="field"><label>' + t('dueDate') + ' *</label><input type="date" id="fDue" value="' + escHtml(v('Due Date')) + '"></div>' +
+        '<div class="field"><label>' + t('timeOptional') + '</label><input type="time" id="fTime" value="' + escHtml(String(v('Due Time')).substring(0, 5)) + '"><div class="hint">' + t('timeHint') + '</div></div></div>' +
         '<div class="field"><label>' + t('repeats') + '</label><select id="fRec">' + rec + '</select></div>' +
         (subs ? '<label class="checkline"><input type="checkbox" id="fCopySubs" checked> ' + t('copySubtasks', { n: subs }) + '</label>' : '') +
         (editing ? '<div class="field"><label>' + t('adminPw') + ' *</label><input type="password" id="fPw" autocomplete="off"></div>'
@@ -1516,6 +1593,7 @@
       clearFieldErrors(); $('formMsg').innerHTML = '';
       if (!title) { fieldError('fTitle', t('required')); return; }
       if (!assignee) { fieldError('fAssign', t('required')); return; }
+      if (!due) { fieldError('fDue', t('dueRequired')); return; }
       // Errors go next to the field they're about (password problems under the password box)
       var fail = function(m) { setFormBusy(false); $('formMsg').innerHTML = ''; if (mode === 'edit' && isPasswordError(m)) fieldError('fPw', m); else showMsg('formMsg', m); };
       if (mode === 'edit') {
@@ -1540,9 +1618,9 @@
         if (!r.success) { fail(r.error || 'Error'); return; }
         var newId = r.taskId;
         var finish = function() {
-          setFormBusy(false); closeTopSheet(); showToast(t(mode === 'duplicate' ? 'taskDuplicated' : 'taskCreated')); loadActivity();
+          setFormBusy(false); closeTopSheet(); showToast(t(mode === 'duplicate' ? 'taskDuplicated' : 'taskCreated'));
           // After duplicating, the open task sheet switches to the new copy
-          loadTasks(function() { if (mode === 'duplicate' && newId && taskById(newId)) openTask(newId, true); });
+          loadAll(false, function() { if (mode === 'duplicate' && newId && taskById(newId)) openTask(newId, true); });
         };
         var afterSubs = function() {
           if (photos.length) { $('formMsg').innerHTML = '<div class="loading">' + t('uploading') + '</div>'; uploadPhotos(newId, null, photos, title, finish); }
@@ -1749,7 +1827,7 @@
         switchTab(tab);
       },
       resetFilters: function() { resetFilters(); renderFloatbar(); renderTasks(); },
-      refresh: function() { loadTasks(); loadActivity(); loadLists(); },
+      refresh: function() { loadAll(true); },
       openTask: function(id) { openTask(id); }, toggleSec: toggleSection, goSection: goToSection, goLocation: goLocation,
       toggleView: function() { S.view = S.view === 'location' ? 'date' : 'location'; lsSet('ssl_view', S.view); renderFloatbar(); renderTasks(); },
       openFilters: openFilters, applyFilters: function() { applyFilters(false); }, clearFilters: function() { applyFilters(true); },
@@ -1813,7 +1891,7 @@
     else if (checkSession()) renderAll();  // signed out just now; the sign-in screen is showing why
     else startApp();
     // Quiet refresh every 2 minutes (an open task isn't re-rendered, so nothing you're typing is lost)
-    setInterval(function() { if (getPin() && !document.hidden && !checkSession()) { loadTasks(); loadActivity(); } }, 120000);
+    setInterval(function() { if (getPin() && !document.hidden && !checkSession()) loadAll(false); }, 120000);
   </script>
 </body>
 </html>
