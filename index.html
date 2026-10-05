@@ -367,7 +367,7 @@
     // inside Google's frame and works in any browser, signed in to Google or not.
     // Change BUILD with every release. The app compares it with the copy on the server and reloads
     // itself when they differ, since Home Screen apps can keep running an old copy for a long time.
-    var BUILD = 'BUILD_ID:2026-10-05.5';
+    var BUILD = 'BUILD_ID:2026-10-05.6';
     var API_URL = window.SSG_API_URL || 'https://script.google.com/macros/s/AKfycbyfgahbomxXh-cEYFgfhe1brFF7jG8qQl62zvIIZZdAtP6mTYRyTM31E-HrYFqfMeqYFw/exec';
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
@@ -550,7 +550,7 @@
       morning: ['Good morning, {name}', 'Buenos días, {name}'], afternoon: ['Good afternoon, {name}', 'Buenas tardes, {name}'], evening: ['Good evening, {name}', 'Buenas noches, {name}'],
       overdue: ['Overdue', 'Vencidas'], dueToday: ['Due today', 'Para hoy'], thisWeek: ['This week', 'Esta semana'],
       recents: ['Recents', 'Recientes'], noRecents: ['Tasks you open will appear here.', 'Las tareas que abra aparecerán aquí.'],
-      noGps: ['No map set', 'Sin mapa'], setGps: ['Set map', 'Poner mapa'], editGps: ['Map', 'Mapa'], gpsCoords: ['Map link or GPS coordinates', 'Enlace de mapa o coordenadas GPS'],
+      noGps: ['No map set', 'Sin mapa'], setGps: ['📍 Set Pin', '📍 Poner pin'], editGps: ['📍 Edit Pin', '📍 Editar pin'], gpsCoords: ['Map link or GPS coordinates', 'Enlace de mapa o coordenadas GPS'],
       linkNoCoords: ['Link saved. Coordinates could not be read from it.', 'Enlace guardado. No se pudieron leer las coordenadas.'],
       googleLink: ['Google Maps link', 'Enlace de Google Maps'], appleLink: ['Apple Maps link', 'Enlace de Apple Maps'],
       gpsHint: ['Paste a link shared from Google Maps or Apple Maps, type coordinates, or stand there and use the button below.', 'Pegue un enlace compartido desde Google Maps o Apple Maps, escriba coordenadas, o párese allí y use el botón de abajo.'],
