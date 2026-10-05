@@ -87,9 +87,11 @@
     .row-main { flex:1; min-width:0; }
     .row-title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; font-size:1.02rem; line-height:1.3; font-weight:600; }
     .row.done .row-title { color:var(--muted); }
-    .row-sub { display:flex; align-items:center; gap:.5rem; color:var(--muted); font-size:.86rem; margin-top:.15rem; min-width:0; }
-    .row-sub .meta { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .row-map { flex:0 0 auto; display:inline-flex; align-items:center; gap:.25rem; color:var(--blue); font-weight:500; text-decoration:none; padding:.3rem .45rem; margin:-.3rem -.45rem; border-radius:.4rem; }
+    .row-sub { display:flex; flex-wrap:wrap; align-items:center; gap:.2rem .4rem; color:var(--muted); font-size:.86rem; margin-top:.15rem; min-width:0; }
+    .row-sub > span, .row-sub > a { min-width:0; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row-sub .dot { font-style:normal; color:var(--faint); flex:0 0 auto; }
+    .row-map { display:inline-flex; align-items:center; gap:.25rem; color:var(--blue); font-weight:500; text-decoration:none; padding:.3rem 0; margin:-.3rem 0; }
+    .row-map svg { flex:0 0 auto; }
     .row-map svg { width:.95rem; height:.95rem; }
     .check { flex:0 0 auto; width:1.45rem; height:1.45rem; border-radius:50%; border:1.5px solid var(--muted); color:var(--muted); display:flex; align-items:center; justify-content:center; background:none; padding:0; }
     .check svg { width:.85rem; height:.85rem; }
@@ -210,6 +212,8 @@
     .d-row { display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
     .checkline { display:flex; align-items:center; gap:.6rem; padding:.7rem 0 1rem; font-size:1rem; cursor:pointer; }
     .checkline input { width:1.3rem; height:1.3rem; margin:0; accent-color:var(--green); }
+    .locbits { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.25rem .5rem; }
+    .locbits .dot { font-style:normal; color:var(--faint); }
     a.loc-pill.link { color:var(--text); text-decoration:none; box-shadow:inset 0 0 0 1px var(--border); }
     .lbtn .grow small { display:block; color:var(--muted); font-size:.8rem; }
     .lbtn.locrow { gap:.5rem; }
@@ -363,7 +367,7 @@
     // inside Google's frame and works in any browser, signed in to Google or not.
     // Change BUILD with every release. The app compares it with the copy on the server and reloads
     // itself when they differ, since Home Screen apps can keep running an old copy for a long time.
-    var BUILD = 'BUILD_ID:2026-10-05.4';
+    var BUILD = 'BUILD_ID:2026-10-05.5';
     var API_URL = window.SSG_API_URL || 'https://script.google.com/macros/s/AKfycbyfgahbomxXh-cEYFgfhe1brFF7jG8qQl62zvIIZZdAtP6mTYRyTM31E-HrYFqfMeqYFw/exec';
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
@@ -547,6 +551,7 @@
       overdue: ['Overdue', 'Vencidas'], dueToday: ['Due today', 'Para hoy'], thisWeek: ['This week', 'Esta semana'],
       recents: ['Recents', 'Recientes'], noRecents: ['Tasks you open will appear here.', 'Las tareas que abra aparecerán aquí.'],
       noGps: ['No map set', 'Sin mapa'], setGps: ['Set map', 'Poner mapa'], editGps: ['Map', 'Mapa'], gpsCoords: ['Map link or GPS coordinates', 'Enlace de mapa o coordenadas GPS'],
+      linkNoCoords: ['Link saved. Coordinates could not be read from it.', 'Enlace guardado. No se pudieron leer las coordenadas.'],
       googleLink: ['Google Maps link', 'Enlace de Google Maps'], appleLink: ['Apple Maps link', 'Enlace de Apple Maps'],
       gpsHint: ['Paste a link shared from Google Maps or Apple Maps, type coordinates, or stand there and use the button below.', 'Pegue un enlace compartido desde Google Maps o Apple Maps, escriba coordenadas, o párese allí y use el botón de abajo.'],
       useMyLocation: ['Use my current location', 'Usar mi ubicación actual'], removeGps: ['Remove map', 'Quitar mapa'],
@@ -566,7 +571,7 @@
       stActive: ['Active', 'Activa'], stOverdue: ['Overdue', 'Vencida'], stComplete: ['Complete', 'Completa'], status: ['Status', 'Estado'],
       markComplete: ['Mark complete', 'Marcar completa'], back: ['Back', 'Atrás'], completedPill: ['Completed', 'Completada'],
       copyLink: ['Copy link', 'Copiar enlace'], linkCopied: ['Link copied', 'Enlace copiado'], editTask: ['Edit task', 'Editar tarea'], deleteTask: ['Delete task', 'Eliminar tarea'],
-      dueDate: ['Due date', 'Vence'], noDue: ['No due date', 'Sin fecha'], map: ['Map', 'Mapa'], notSet: ['Not set', 'Sin definir'],
+      dueDate: ['Due date', 'Vence'], noDue: ['No due date', 'Sin fecha'], map: ['Map', 'Mapa'], photoLocation: ['Photo location', 'Ubicación de la foto'], notSet: ['Not set', 'Sin definir'],
       description: ['Description', 'Descripción'], subtasks: ['Subtasks', 'Subtareas'], addSubtask: ['Add subtask', 'Agregar subtarea'], add: ['Add', 'Agregar'],
       editSubtask: ['Edit subtask', 'Editar subtarea'], deleteSubtaskQ: ['Delete this subtask?', '¿Eliminar esta subtarea?'], noSubtasks: ['No subtasks', 'Sin subtareas'],
       photos: ['Photos', 'Fotos'], noPhotos: ['No photos', 'Sin fotos'], comments: ['Comments', 'Comentarios'], noComments: ['No comments yet', 'Aún no hay comentarios'],
@@ -989,16 +994,17 @@
       if (done) pill = '<span class="date-pill">' + escHtml(fmtShort(task['Completed Date'])) + '</span>';
       else if (n === null) pill = '<span class="date-none">' + ICON.cal + '</span>';
       else pill = '<span class="date-pill' + (n < 0 ? ' overdue' : n === 0 ? ' today' : '') + '">' + escHtml(n < 0 ? fmtShort(task['Due Date']) : relDate(task['Due Date'])) + '</span>';
-      var sub = [];
-      if (task.Location) sub.push(escHtml(task.Location));
-      if (task['Subtasks Total']) sub.push('☑ ' + (task['Subtasks Done'] || 0) + '/' + task['Subtasks Total']);
-      if (task.Assignee && task.Assignee !== 'Team') sub.push(escHtml(task.Assignee));
-      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']) || placeMapUrl(task.Location);
+      // Line under the title: location (a link when the location has a map), photo location (a link
+      // to where the task's photo was taken), subtasks, and assignee, with a bullet between each
+      var sub = [], placeUrl = placeMapUrl(task.Location), photoUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']);
+      if (task.Location) sub.push(placeUrl ? '<a class="row-map" href="' + escHtml(placeUrl) + '" target="_blank" rel="noopener">' + escHtml(task.Location) + '</a>' : '<span>' + escHtml(task.Location) + '</span>');
+      if (photoUrl) sub.push('<a class="row-map" href="' + escHtml(photoUrl) + '" target="_blank" rel="noopener">' + ICON.map + t('photoLocation') + '</a>');
+      if (task['Subtasks Total']) sub.push('<span>☑ ' + (task['Subtasks Done'] || 0) + '/' + task['Subtasks Total'] + '</span>');
+      if (task.Assignee && task.Assignee !== 'Team') sub.push('<span>' + escHtml(task.Assignee) + '</span>');
       return '<div class="row' + (done ? ' done' : '') + '" data-act="openTask" data-arg="' + escHtml(task['Task ID']) + '">' +
         '<span class="check' + (done ? ' done' : '') + '">' + ICON.check + '</span>' +
         '<div class="row-body"><div class="row-main"><div class="row-title">' + escHtml(titleOf(task).primary) + '</div>' +
-        (sub.length || mapUrl ? '<div class="row-sub">' + (sub.length ? '<span class="meta">' + sub.join(' · ') + '</span>' : '') +
-          (mapUrl ? '<a class="row-map" href="' + escHtml(mapUrl) + '" target="_blank" rel="noopener">' + ICON.map + t('map') + '</a>' : '') + '</div>' : '') +
+        (sub.length ? '<div class="row-sub">' + sub.join('<i class="dot">\u2022</i>') + '</div>' : '') +
         '</div>' + pill + '</div></div>';
     }
     function isCollapsed(key) { return S.collapsed[key] !== undefined ? S.collapsed[key] : key === 'completed'; }
@@ -1374,8 +1380,9 @@
       return p.url && isMapLink(p.url) ? p.url : coordsMapUrl(p.lat, p.lng);
     }
     function placeLabel(p) {
-      if (p.url) return /apple/i.test(p.url) ? t('appleLink') : t('googleLink');
-      return p.lat + ', ' + p.lng;
+      var xy = isFinite(parseFloat(p.lat)) && isFinite(parseFloat(p.lng)) ? p.lat + ', ' + p.lng : '';
+      if (p.url) return (/apple/i.test(p.url) ? t('appleLink') : t('googleLink')) + (xy ? ' (' + xy + ')' : '');
+      return xy;
     }
     function coordsMapUrl(latVal, lngVal) {
       var lat = parseFloat(latVal), lng = parseFloat(lngVal);
@@ -1399,15 +1406,15 @@
       html += '<div class="d-meta"><div class="m">' + avatar(task.Assignee) + '<div style="min-width:0"><small>' + t('assignedTo') + '</small><b>' + escHtml(personLabel(task.Assignee)) + '</b></div></div>' +
         '<div class="m"><span class="calicon' + (overdue ? ' overdue' : '') + '">' + ICON.cal + '</span><div style="min-width:0"><small>' + t('dueDate') + '</small><b' + (overdue ? ' class="overdue"' : '') + '>' + escHtml(due) + '</b></div></div>' +
         (task.Recurrence && task.Recurrence !== 'None' ? '<span class="recur" title="' + escHtml(t('repeats') + ': ' + t(task.Recurrence)) + '">' + ICON.repeat + '</span>' : '') + '</div>';
-      // Location: the pill opens the location's own GPS spot when it has one; "Map" opens the spot
-      // where the task's photo was taken, or the location's spot when there's no photo location
-      var placeUrl = placeMapUrl(task.Location);
-      var mapUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']) || placeUrl;
+      // Location: the location's name (a link when it has a map), then "Photo location" (a link to
+      // where the task's photo was taken), with a bullet between the two
+      var placeUrl = placeMapUrl(task.Location), photoUrl = coordsMapUrl(task['Photo Latitude'], task['Photo Longitude']);
       var pillInner = '<span class="swatch" style="background:' + colorFor(task.Location) + '"></span>' + escHtml(task.Location);
-      html += '<div class="d-sec"><div class="d-row"><span class="muted">' + t('location') + '</span><span>' +
-        (task.Location ? (placeUrl ? '<a class="loc-pill link" href="' + escHtml(placeUrl) + '" target="_blank" rel="noopener">' + pillInner + '</a>' : '<span class="loc-pill">' + pillInner + '</span>')
-          : (mapUrl ? '' : '<span class="muted">' + t('notSet') + '</span>')) +
-        (mapUrl ? ' <a class="maplink" href="' + escHtml(mapUrl) + '" target="_blank" rel="noopener">' + ICON.map + t('map') + '</a>' : '') + '</span></div></div>';
+      var locBits = [];
+      if (task.Location) locBits.push(placeUrl ? '<a class="loc-pill link" href="' + escHtml(placeUrl) + '" target="_blank" rel="noopener">' + pillInner + '</a>' : '<span class="loc-pill">' + pillInner + '</span>');
+      if (photoUrl) locBits.push('<a class="maplink" href="' + escHtml(photoUrl) + '" target="_blank" rel="noopener">' + ICON.map + t('photoLocation') + '</a>');
+      html += '<div class="d-sec"><div class="d-row"><span class="muted">' + t('location') + '</span><span class="locbits">' +
+        (locBits.length ? locBits.join('<i class="dot">\u2022</i>') : '<span class="muted">' + t('notSet') + '</span>') + '</span></div></div>';
       // Priority / Status table
       var st = statusInfo(task), p = task.Priority || 'Medium';
       html += '<div class="d-sec"><div class="ftable"><div class="fr"><div>' + t('priority') + '</div><div><span class="tag p-' + escHtml(p.toLowerCase()) + '">' + escHtml(t(p)) + '</span></div></div>' +
@@ -1939,7 +1946,11 @@
       var fail = function(m) { setBusy('gpsSave', false); if ($('gpsInput')) fieldError('gpsInput', isUnknownRequest(m) ? t('needsServerUpdate') : m); };
       server(function(r) {
         if (!r.success) { fail(r.error || 'Error'); return; }
-        if (clear) delete S.places[name]; else S.places[name] = c.url ? { url: c.url } : { lat: c.lat, lng: c.lng, url: '' };
+        // For a link, the server reads the coordinates out of it and sends them back
+        if (clear) delete S.places[name];
+        else if (c.url) S.places[name] = { url: c.url, lat: r.coordsFound ? r.lat : undefined, lng: r.coordsFound ? r.lng : undefined };
+        else S.places[name] = { lat: c.lat, lng: c.lng, url: '' };
+        if (c.url && r.coordsFound === false) showToast(t('linkNoCoords'));
         saveCache(); renderLists();
         closeTopSheet(); openLocations();
       }, fail).setLocationMap(name, c.lat, c.lng, c.url);
