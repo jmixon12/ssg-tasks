@@ -343,7 +343,7 @@
     // inside Google's frame and works in any browser, signed in to Google or not.
     // Change BUILD with every release. The app compares it with the copy on the server and reloads
     // itself when they differ, since Home Screen apps can keep running an old copy for a long time.
-    var BUILD = 'BUILD_ID:2026-10-02.3';
+    var BUILD = 'BUILD_ID:2026-10-05.1';
     var API_URL = window.SSG_API_URL || 'https://script.google.com/macros/s/AKfycbyfgahbomxXh-cEYFgfhe1brFF7jG8qQl62zvIIZZdAtP6mTYRyTM31E-HrYFqfMeqYFw/exec';
     var API_FUNCTIONS = ['getTasksJSON','getLocationsJSON','getTeamJSON','getCommentsJSON','getPhotosJSON',
       'createTask','updateTask','completeTask','reopenTask','deleteTask','addComment','savePhoto',
@@ -366,19 +366,55 @@
 
     // POSTs {fn, args, pin, device}. text/plain keeps it a "simple" cross-site request (no preflight),
     // which Apps Script requires.
+    //
+    // Requests go out ONE AT A TIME. When several reach Apps Script at the same moment, Google sometimes
+    // holds one for ~30 seconds and then answers with a web page instead of data. Requests that only
+    // read data are also given a time limit and retried quietly; requests that change something are
+    // never repeated automatically, because the first try may have gone through.
+    var READ_FNS = { signIn: 1, whoAmI: 1, getTasksJSON: 1, getLocationsJSON: 1, getTeamJSON: 1, getCommentsJSON: 1, getPhotosJSON: 1,
+      getSubtasksJSON: 1, getActivityJSON: 1, markActivitySeen: 1, getTeamAdminJSON: 1, getLoginLogJSON: 1 };
+    var READ_TIMEOUT_MS = 15000, READ_RETRIES = 2;
+    var apiQueue = [], apiBusy = false;
     function callApi(fn, args, onOk, onFail, pinOverride) {
-      var fail = function(msg) { if (onFail) onFail(new Error(msg)); };
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ fn: fn, args: args, pin: pinOverride || getPin(), device: deviceLabel() })
-      }).then(function(resp) { return resp.text(); }).then(function(text) {
-        var res;
-        try { res = JSON.parse(text); } catch(e) { fail('Unexpected server response'); return; }
-        if (res.ok) { if (onOk) onOk(res.result); return; }
-        if (res.auth === false && fn !== 'signIn') showSignIn(res.error);
-        fail(res.error || 'Unknown error');
-      }).catch(function(err) { fail(err && err.message ? err.message : 'Network error'); });
+      apiQueue.push({ fn: fn, onOk: onOk, onFail: onFail, tries: 0, read: !!READ_FNS[fn],
+        body: JSON.stringify({ fn: fn, args: args, pin: pinOverride || getPin(), device: deviceLabel() }) });
+      pumpApi();
+    }
+    function pumpApi() {
+      if (apiBusy || !apiQueue.length) return;
+      apiBusy = true;
+      sendApi(apiQueue.shift());
+    }
+    function sendApi(job) {
+      var settled = false, timer = null, ctrl = job.read && window.AbortController ? new AbortController() : null;
+      var next = function() { apiBusy = false; pumpApi(); };
+      // Each attempt is settled exactly once: by a reply, a network error, or the time limit
+      var settle = function(res, errMsg) {
+        if (settled) return;
+        settled = true; clearTimeout(timer);
+        if (res) {
+          next();
+          if (res.ok) { if (job.onOk) job.onOk(res.result); return; }
+          if (res.auth === false && job.fn !== 'signIn') showSignIn(res.error);
+          if (job.onFail) job.onFail(new Error(res.error || 'Unknown error'));
+          return;
+        }
+        if (job.read && job.tries < READ_RETRIES) {
+          job.tries++;
+          setTimeout(function() { sendApi(job); }, 700 * job.tries);  // the queue stays held, so order is kept
+          return;
+        }
+        next();
+        if (job.onFail) job.onFail(new Error(errMsg));
+      };
+      if (job.read) timer = setTimeout(function() { if (ctrl) { try { ctrl.abort(); } catch(e) {} } settle(null, 'No reply from the server'); }, READ_TIMEOUT_MS);
+      var opts = { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: job.body };
+      if (ctrl) opts.signal = ctrl.signal;
+      fetch(API_URL, opts).then(function(resp) { return resp.text(); }).then(function(text) {
+        var res = null;
+        try { res = JSON.parse(text); } catch(e) {}
+        if (res && typeof res === 'object') settle(res); else settle(null, job.read ? 'Unexpected server response' : t('notConfirmed'));
+      }).catch(function(err) { settle(null, err && err.message ? err.message : 'Network error'); });
     }
 
     // Same calling style as Apps Script's google.script.run:
@@ -404,7 +440,7 @@
           onSuccess(r);
         })
         .withFailureHandler(function(e) {
-          var msg = t('network') + (e && e.message ? ' (' + e.message + ')' : '');
+          var msg = e && e.message === t('notConfirmed') ? e.message : t('network') + (e && e.message ? ' (' + e.message + ')' : '');
           if (onError) onError(msg); else showToast(msg);
         });
     }
@@ -535,6 +571,8 @@
       appearance: ['Appearance', 'Apariencia'], auto: ['Automatic', 'Automático'], light: ['Light', 'Claro'], dark: ['Dark', 'Oscuro'], textSize: ['Text size', 'Tamaño del texto'],
       adminTools: ['Admin tools', 'Herramientas de administrador'], teamMembers: ['Team members', 'Miembros del equipo'], loginLog: ['Login log', 'Registro de acceso'],
       changePw: ['Change password', 'Cambiar contraseña'], audit: ['Audit orphans', 'Revisar huérfanos'], signOut: ['Sign out', 'Cerrar sesión'],
+      notConfirmed: ['The server did not confirm this. Check whether it was saved before trying again.', 'El servidor no confirmó esto. Verifique si se guardó antes de intentar de nuevo.'],
+      tryAgain: ['Try again', 'Intentar de nuevo'], sessionExpired: ['For security, you are signed out after 18 hours. Please sign in again.', 'Por seguridad, la sesión se cierra después de 18 horas. Inicie sesión de nuevo.'],
       network: ['Could not reach the server. Check your connection and try again.', 'No se pudo conectar con el servidor. Verifique su conexión e intente de nuevo.'],
       addMember: ['Add member', 'Agregar miembro'], addLocation: ['Add location', 'Agregar ubicación'], remove: ['Remove', 'Quitar'],
       member: ['Team member', 'Miembro'], langSettings: ['Language settings', 'Configuración de idioma'], notSetTheirs: ['Not set (their choice)', 'Sin definir (su elección)'],
@@ -674,7 +712,7 @@
       lsSet('ssl_lang_applied', key);
     }
     function showSignIn(msg) {
-      ['ssl_pin','ssl_user','ssl_admin','ssl_lang_applied'].forEach(lsDel);
+      ['ssl_pin','ssl_user','ssl_admin','ssl_lang_applied','ssl_signed_at'].forEach(lsDel);
       // Forget the previous person's Activity state so the next person starts fresh
       S.activity = []; S.seen = ''; S.viewSeen = null; S.activityLoaded = false;
       $('pinInput').value = '';
@@ -688,7 +726,7 @@
       $('pinMsg').innerHTML = '';
       callApi('signIn', [], function(result) {
         setBusy('pinBtn', false);
-        lsSet('ssl_pin', pin);
+        lsSet('ssl_pin', pin); lsSet('ssl_signed_at', String(Date.now()));
         saveMember(JSON.parse(result));
         $('signin').classList.remove('on');
         startApp();
@@ -698,12 +736,29 @@
         showMsg('pinMsg', err.message);
       }, pin);
     }
-    function signOut() { callApi('signOut', [], null, null); showSignIn(''); }
+    function signOut(msg) { callApi('signOut', [], null, null); showSignIn(msg || ''); }
+    // Everyone is signed out 18 hours after signing in. Checked when the app opens, when it comes
+    // back to the screen, and every 2 minutes while it's open.
+    var SESSION_MS = 18 * 60 * 60 * 1000;
+    function checkSession() {
+      if (!getPin()) return false;
+      var at = parseInt(lsGet('ssl_signed_at', ''), 10);
+      if (!at) { lsSet('ssl_signed_at', String(Date.now())); return false; }  // signed in before this rule existed: the 18 hours start now
+      if (Date.now() - at < SESSION_MS) return false;
+      if (sheetStack.length) closeSheets(sheetStack.length);
+      closeMenu();
+      signOut(t('sessionExpired'));
+      return true;
+    }
 
     // ═══════════════════════════════════════════
     // LOADING DATA
     // ═══════════════════════════════════════════
+    function loadErrorHtml() {
+      return '<div class="pad"><div class="error-msg">' + escHtml(S.loadError) + '</div><button class="btn block" data-act="refresh" style="margin-top:.9rem;padding:.9rem">' + t('tryAgain') + '</button></div>';
+    }
     function loadTasks(after) {
+      if (!S.loaded && S.loadError) { S.loadError = ''; renderLists(); }  // back to "Loading..." while it tries again
       server(function(tasks) {
         if (Array.isArray(tasks)) { S.tasks = tasks; S.loaded = true; S.loadError = ''; }
         renderLists();
@@ -748,7 +803,7 @@
         location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));  // a new URL skips the cached copy
       }).catch(function() {});
     }
-    document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible') checkForUpdate(); });
+    document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible') { checkSession(); checkForUpdate(); } });
     window.addEventListener('pageshow', function(e) { if (e.persisted) checkForUpdate(); });
     if (/[?&]v=/.test(location.search)) history.replaceState(null, '', location.pathname);
 
@@ -895,7 +950,7 @@
     function renderTasks() {
       var el = $('view-tasks');
       var head = '<div class="vhead"><h1 class="vtitle">' + t('tasks') + '</h1><button class="iconbtn" data-act="refresh" aria-label="Refresh">' + ICON.refresh + '</button></div>';
-      if (!S.loaded) { el.innerHTML = head + (S.loadError ? '<div class="pad"><div class="error-msg">' + escHtml(S.loadError) + '</div></div>' : '<div class="loading">' + t('loading') + '</div>'); return; }
+      if (!S.loaded) { el.innerHTML = head + (S.loadError ? loadErrorHtml() : '<div class="loading">' + t('loading') + '</div>'); return; }
       var tasks = S.tasks.filter(matchesFilters);
       var html = head;
       if (S.view === 'location') {
@@ -965,7 +1020,7 @@
       var now = new Date(), h = now.getHours();
       var greet = t(h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening', { name: escHtml(getUserName()) });
       var html = '<div class="vhead" style="display:block"><div class="vdate">' + escHtml(fmtLong(now)) + '</div><h1 class="vtitle">' + greet + '</h1></div>';
-      if (!S.loaded) { $('view-home').innerHTML = html + (S.loadError ? '<div class="pad"><div class="error-msg">' + escHtml(S.loadError) + '</div></div>' : '<div class="loading">' + t('loading') + '</div>'); return; }
+      if (!S.loaded) { $('view-home').innerHTML = html + (S.loadError ? loadErrorHtml() : '<div class="loading">' + t('loading') + '</div>'); return; }
       var g = dateGroups(S.tasks);
       html += '<div class="card"><div class="tiles">' +
         '<button class="tile' + (g.overdue.length ? ' red' : '') + '" data-act="goSection" data-arg="overdue"><b>' + g.overdue.length + '</b><span>' + t('overdue') + '</span></button>' +
@@ -1754,9 +1809,11 @@
     // START
     // ═══════════════════════════════════════════
     applyTheme(); applyFontSize();
-    if (getPin()) startApp(); else { renderAll(); showSignIn(''); }
+    if (!getPin()) { renderAll(); showSignIn(''); }
+    else if (checkSession()) renderAll();  // signed out just now; the sign-in screen is showing why
+    else startApp();
     // Quiet refresh every 2 minutes (an open task isn't re-rendered, so nothing you're typing is lost)
-    setInterval(function() { if (getPin() && !document.hidden) { loadTasks(); loadActivity(); } }, 120000);
+    setInterval(function() { if (getPin() && !document.hidden && !checkSession()) { loadTasks(); loadActivity(); } }, 120000);
   </script>
 </body>
 </html>
